@@ -22,6 +22,7 @@ extern "C" {
 
 #define NODE_TIMEOUT        3000000  //uSecs
 #define JSON_BUFSIZE        300 // initial size for the DynamicJsonBuffers.
+#define MIN_FREE_MEMMORY    10000 // Minimum free memory, besides here all packets in queue are discarded.
 
 
 enum nodeStatusType {
@@ -131,7 +132,7 @@ public:
     // in painlessMeshSync.cpp
     uint32_t            getNodeTime(void);
 
-#ifndef UNIT_TEST // Make everything public in unit test mode
+#ifndef UNITY // Make everything public in unit test mode
 protected:
 #endif
 
