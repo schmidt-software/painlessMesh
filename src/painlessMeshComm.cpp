@@ -91,7 +91,7 @@ bool ICACHE_FLASH_ATTR painlessMesh::sendPackage(meshConnectionType *connection,
                 return false;
             }
         } else {
-            if (ESP.getFreeHeap() >= MIN_FREE_MEMORY) { // If memory heap is enough, queue the message
+            if (ESP.getFreeHeap() - package.length() >= MIN_FREE_MEMORY) { // If memory heap is enough, queue the message
                 if (priority) {
                     connection->sendQueue.push_front(package);
                     debugMsg(COMMUNICATION, "sendPackage(): Package sent to queue beginning -> %d , FreeMem: %d\n", connection->sendQueue.size(), ESP.getFreeHeap());
