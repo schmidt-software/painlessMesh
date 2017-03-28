@@ -30,8 +30,8 @@ String randomString(uint32_t length) {
 }
 
 void addMessage(painlessMesh &m, String msg, uint32_t nodeId) {
-    m.sendSingle(nodeId, msg);
-    expected.push_back(msg);
+    if (m.sendSingle(nodeId, msg))
+        expected.push_back(msg);
 }
 
 void newConnectionCallback(uint32_t nodeId) {
@@ -39,9 +39,14 @@ void newConnectionCallback(uint32_t nodeId) {
     mesh.sendSingle(nodeId, msg);
     expected.push_back(msg);
 
-    // Test 10 msgs
+    // Test 10 short msgs
     for(auto i = 0; i < 10; ++i)
         addMessage(mesh, randomString(random(10,50)), nodeId);
+
+    // Test 10 long msgs
+    for(auto i = 0; i < 10; ++i)
+        addMessage(mesh, randomString(random(1000,1300)), nodeId);
+
 
     //addMessage(mesh, randomString(1800), nodeId);
     //addMessage(mesh, randomString(3600), nodeId);
@@ -84,7 +89,8 @@ void logMessages() {
 
 void setup() {
     UNITY_BEGIN();    // IMPORTANT LINE!
-    //mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE ); // all types on
+    //mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE | DEBUG ); // all types on
+    mesh.setDebugMsgTypes( ERROR | CONNECTION | DEBUG ); // all types on
     mesh.init( MESH_PREFIX, MESH_PASSWORD, MESH_PORT );
     mesh.onNewConnection(&newConnectionCallback);
     mesh.onReceive(&receivedCallback);
