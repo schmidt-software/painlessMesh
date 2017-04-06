@@ -16,8 +16,6 @@ extern "C" {
 
 #include "painlessMesh.h"
 
-
-
 extern painlessMesh* staticThis;
 
 // Station functions
@@ -240,3 +238,54 @@ uint32_t ICACHE_FLASH_ATTR painlessMesh::encodeNodeId(uint8_t *hwaddr) {
     value |= hwaddr[5];
     return value;
 }
+
+void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo);
+
+// Starts scan for APs whose name is Mesh SSID 
+void ICACHE_FLASH_ATTR stationScan(
+        const String &ssid, 
+        const uint8_t channel) {
+    staticThis->debugMsg(CONNECTION, "stationScan():\n");
+
+    char tempssid[32];
+    struct scan_config scanConfig;
+    memset(&scanConfig, 0, sizeof(scanConfig));
+    ssid.toCharArray(tempssid, ssid.length() + 1);
+
+    scanConfig.ssid = (uint8_t *) tempssid; // limit scan to mesh ssid
+    scanConfig.bssid = 0;
+    scanConfig.channel = channel; // also limit scan to mesh channel to speed things up ...
+    scanConfig.show_hidden = 1; // add hidden APs ... why not? we might want to hide ...
+
+    if (!wifi_station_scan(&scanConfig, 
+                [](void *arg, STATUS status){
+                    bss_info *bssInfo = (bss_info *) arg;
+                    scanComplete(bssInfo);
+                })) {
+        staticThis->debugMsg(ERROR, "wifi_station_scan() failed!?\n");
+        return;
+    }
+    return;
+}
+
+void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo) {
+    staticThis->debugMsg(CONNECTION, "scanComplete():-- > scan finished @ %u < --\n", staticThis->getNodeTime());
+
+    SimpleList<bss_info> aps;
+
+    while (bssInfo != NULL) {
+        staticThis->debugMsg(CONNECTION, "\tfound : % s, % ddBm", (char*) bssInfo->ssid, (int16_t) bssInfo->rssi);
+        staticThis->debugMsg(CONNECTION, " MESH< ---");
+        aps.push_back(*bssInfo);
+        staticThis->debugMsg(CONNECTION, "\n");
+        bssInfo = STAILQ_NEXT(bssInfo, next);
+    }
+    staticThis->debugMsg(CONNECTION, "\tFound % d nodes\n", aps.size());
+
+    // Task filter all unknown
+    //task.setcallback([&aps]() { aps = filteredAPS(std::move(aps)); task.setCallback( (sort by strength etc));
+    //staticThis->connectToBestAP();
+    // Make sure scanning task is run immediately if station connection lost
+}
+
+

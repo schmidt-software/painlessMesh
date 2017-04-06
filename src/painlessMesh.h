@@ -5,7 +5,7 @@
 #error Only ESP8266 platform is allowed
 #endif // !ESP8266
 
-
+#include <painlessScheduler.h>
 #include <Arduino.h>
 #include <SimpleList.h>
 #include <ArduinoJson.h>
@@ -135,6 +135,8 @@ public:
 #ifndef UNITY // Make everything public in unit test mode
 protected:
 #endif
+    Scheduler scheduler;
+    Task taskStationScan; // Station scanning for connections
 
     // in painlessMeshComm.cpp
     //must be accessable from callback
@@ -220,6 +222,8 @@ protected:
     espconn     _stationConn;
     esp_tcp     _stationTcp;
 };
+
+void ICACHE_FLASH_ATTR stationScan(const String &ssid, const uint8_t channel);
 
 
 #endif //   _EASY_MESH_H_

@@ -14,6 +14,7 @@ extern "C" {
 painlessMesh* staticThis;
 uint16_t  count = 0;
 
+void dummy() {}
 
 // general functions
 //***********************************************************************
@@ -69,10 +70,17 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
         stationInit();  // setup station
 
     debugMsg(STARTUP, "init(): tcp_max_con=%u, nodeId = %u\n", espconn_tcp_get_max_con(), _nodeId);
+
+    taskStationScan.set(TASK_IMMEDIATE, TASK_FOREVER, [ssid, channel](){
+                stationScan(ssid, channel);
+            });
+    scheduler.addTask(taskStationScan);
+    scheduler.enableAll();
 }
 
 //***********************************************************************
 void ICACHE_FLASH_ATTR painlessMesh::update(void) {
+    scheduler.execute();
     manageStation();
     manageConnections();
     return;
