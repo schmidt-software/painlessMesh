@@ -14,8 +14,6 @@ extern "C" {
 painlessMesh* staticThis;
 uint16_t  count = 0;
 
-void dummy() {}
-
 // general functions
 //***********************************************************************
 void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t port, nodeMode connectMode, _auth_mode authmode, uint8_t channel, phy_mode_t phymode, uint8_t maxtpw, uint8_t hidden, uint8_t maxconn) {

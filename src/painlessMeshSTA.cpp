@@ -8,6 +8,8 @@
 
 #include <Arduino.h>
 #include <SimpleList.h>
+#include <algorithm>
+#include <memory>
 
 extern "C" {
 #include "user_interface.h"
@@ -242,6 +244,8 @@ uint32_t ICACHE_FLASH_ATTR painlessMesh::encodeNodeId(uint8_t *hwaddr) {
 void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo);
 void ICACHE_FLASH_ATTR filterAPs(
         SimpleList<bss_info> &aps);
+void ICACHE_FLASH_ATTR connectToAP(
+        SimpleList<bss_info> &aps);
 
 // Starts scan for APs whose name is Mesh SSID 
 void ICACHE_FLASH_ATTR stationScan(
@@ -270,27 +274,37 @@ void ICACHE_FLASH_ATTR stationScan(
     return;
 }
 
-SimpleList<bss_info> aps;
 void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo) {
     staticThis->debugMsg(CONNECTION, "scanComplete():-- > scan finished @ %u < --\n", staticThis->getNodeTime());
 
+    std::shared_ptr<SimpleList<bss_info> > aps_ptr( 
+        new SimpleList<bss_info>());
 
     while (bssInfo != NULL) {
         staticThis->debugMsg(CONNECTION, "\tfound : % s, % ddBm", (char*) bssInfo->ssid, (int16_t) bssInfo->rssi);
         staticThis->debugMsg(CONNECTION, " MESH< ---");
-        aps.push_back(*bssInfo);
+        aps_ptr->push_back(*bssInfo);
         staticThis->debugMsg(CONNECTION, "\n");
         bssInfo = STAILQ_NEXT(bssInfo, next);
     }
-    staticThis->debugMsg(CONNECTION, "\tFound % d nodes\n", aps.size());
+    staticThis->debugMsg(CONNECTION, "\tFound % d nodes\n", aps_ptr->size());
 
     // Task filter all unknown
-    staticThis->taskStationScan.setCallback([&aps]() { 
-            filterAPs(aps); 
-            //task.setCallback( (sort by strength etc));
+    staticThis->taskStationScan.setCallback([aps_ptr]() { 
+            filterAPs(*aps_ptr);
+
+            // Next task is to sort by strength
+            staticThis->taskStationScan.setCallback([aps_ptr] {
+                std::sort(aps_ptr->begin(), aps_ptr->end(),
+                        [](bss_info a, bss_info b) {
+                        return a.rssi > b.rssi;
+                });
+                // Next task is to connect to the top ap
+                staticThis->taskStationScan.setCallback([aps_ptr]() { 
+                    connectToAP(*aps_ptr);
+                });
+            });
     });
-    //staticThis->connectToBestAP();
-    // Make sure scanning task is run immediately if station connection lost
 }
 
 void ICACHE_FLASH_ATTR filterAPs(
@@ -308,5 +322,13 @@ void ICACHE_FLASH_ATTR filterAPs(
     }
 }
 
-
-
+void ICACHE_FLASH_ATTR connectToAP(
+        SimpleList<bss_info> &aps) {
+    // If aps empty, 
+    //      then if already connected -> scan slow (10*SCAN_INTERVAL)
+    //      else scan fast (SCAN_INTERVAL)
+    // Else try to connect to first 
+    //      Delete first from list
+    //      Set callback if connection fails to connectToAP immediately
+    //   Rescan very slow (100*SCAN_INTERVAL)
+}
