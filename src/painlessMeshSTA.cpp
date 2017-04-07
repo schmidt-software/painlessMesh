@@ -240,12 +240,14 @@ uint32_t ICACHE_FLASH_ATTR painlessMesh::encodeNodeId(uint8_t *hwaddr) {
 }
 
 void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo);
+void ICACHE_FLASH_ATTR filterAPs(
+        SimpleList<bss_info> &aps);
 
 // Starts scan for APs whose name is Mesh SSID 
 void ICACHE_FLASH_ATTR stationScan(
         const String &ssid, 
         const uint8_t channel) {
-    staticThis->debugMsg(CONNECTION, "stationScan():\n");
+    staticThis->debugMsg(CONNECTION, "stationScan(): %s\n", ssid.c_str());
 
     char tempssid[32];
     struct scan_config scanConfig;
@@ -268,10 +270,10 @@ void ICACHE_FLASH_ATTR stationScan(
     return;
 }
 
+SimpleList<bss_info> aps;
 void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo) {
     staticThis->debugMsg(CONNECTION, "scanComplete():-- > scan finished @ %u < --\n", staticThis->getNodeTime());
 
-    SimpleList<bss_info> aps;
 
     while (bssInfo != NULL) {
         staticThis->debugMsg(CONNECTION, "\tfound : % s, % ddBm", (char*) bssInfo->ssid, (int16_t) bssInfo->rssi);
@@ -283,9 +285,28 @@ void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo) {
     staticThis->debugMsg(CONNECTION, "\tFound % d nodes\n", aps.size());
 
     // Task filter all unknown
-    //task.setcallback([&aps]() { aps = filteredAPS(std::move(aps)); task.setCallback( (sort by strength etc));
+    staticThis->taskStationScan.setCallback([&aps]() { 
+            filterAPs(aps); 
+            //task.setCallback( (sort by strength etc));
+    });
     //staticThis->connectToBestAP();
     // Make sure scanning task is run immediately if station connection lost
 }
+
+void ICACHE_FLASH_ATTR filterAPs(
+        SimpleList<bss_info> &aps) {
+    auto ap = aps.begin();
+    while (ap != aps.end()) {
+        auto apNodeId = staticThis->encodeNodeId(ap->bssid);
+        if (staticThis->findConnection(apNodeId) != NULL) {
+            ap = aps.erase(ap);
+            //                debugMsg( GENERAL, "<--already connected\n");
+        } else {
+            ap++;
+            //              debugMsg( GENERAL, "\n");
+        }
+    }
+}
+
 
 

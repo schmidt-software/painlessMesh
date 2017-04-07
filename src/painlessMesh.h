@@ -128,16 +128,21 @@ public:
     String              subConnectionJson() { return subConnectionJson(NULL); }
     bool                isConnected(uint32_t nodeId) { return findConnection(nodeId) != NULL; }
     SimpleList<uint32_t> getNodeList();
+    meshConnectionType* findConnection(uint32_t nodeId);
+    meshConnectionType* findConnection(espconn *conn);
 
     // in painlessMeshSync.cpp
     uint32_t            getNodeTime(void);
 
-#ifndef UNITY // Make everything public in unit test mode
-protected:
-#endif
+    // in painlessMeshSTA.cpp
+    uint32_t            encodeNodeId(uint8_t *hwaddr);
+
     Scheduler scheduler;
     Task taskStationScan; // Station scanning for connections
 
+#ifndef UNITY // Make everything public in unit test mode
+protected:
+#endif
     // in painlessMeshComm.cpp
     //must be accessable from callback
     bool                sendMessage(meshConnectionType *conn, uint32_t destId, uint32_t fromId, meshPackageType type, String &msg, bool priority = false);
@@ -159,8 +164,6 @@ protected:
 
     // in painlessMeshConnection.cpp
     void                manageConnections(void);
-    meshConnectionType* findConnection(uint32_t nodeId);
-    meshConnectionType* findConnection(espconn *conn);
     //void                cleanDeadConnections(void); // Not implemented. Needed?
     void                tcpConnect(void);
     bool                connectToBestAP(void);
@@ -177,7 +180,6 @@ protected:
     void                stationInit(void);
     //bool                stationConnect(void); // Not implemented. Needed?
     void                startStationScan(void);
-    uint32_t            encodeNodeId(uint8_t *hwaddr);
 
     // in painlessMeshAP.cpp
     void                apInit(void);
