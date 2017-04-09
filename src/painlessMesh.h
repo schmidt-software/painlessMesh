@@ -166,7 +166,6 @@ protected:
     void                manageConnections(void);
     //void                cleanDeadConnections(void); // Not implemented. Needed?
     void                tcpConnect(void);
-    bool                connectToBestAP(void);
     meshConnectionType* closeConnection(meshConnectionType *conn);
     String              subConnectionJson(meshConnectionType *exclude);
     String              subConnectionJsonHelper(
@@ -175,11 +174,6 @@ protected:
 
     // in painlessMeshSTA.cpp
     void                manageStation(void);
-    static void         stationScanCb(void *arg, STATUS status);
-    static void         scanTimerCallback(void *arg);
-    void                stationInit(void);
-    //bool                stationConnect(void); // Not implemented. Needed?
-    void                startStationScan(void);
 
     // in painlessMeshAP.cpp
     void                apInit(void);
@@ -224,8 +218,5 @@ protected:
     espconn     _stationConn;
     esp_tcp     _stationTcp;
 };
-
-void ICACHE_FLASH_ATTR stationScan(const String &ssid, const uint8_t channel);
-
 
 #endif //   _EASY_MESH_H_

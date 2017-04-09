@@ -64,14 +64,14 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
 
     if (connectMode == AP_ONLY || connectMode == STA_AP)
         apInit();       // setup AP
-    if (connectMode == STA_ONLY || connectMode == STA_AP)
-        stationInit();  // setup station
+    if (connectMode == STA_ONLY || connectMode == STA_AP) {
+        stationScan.init(this, ssid, password, channel);
+        scheduler.addTask(stationScan.task);
+    }
 
     debugMsg(STARTUP, "init(): tcp_max_con=%u, nodeId = %u\n", espconn_tcp_get_max_con(), _nodeId);
 
 
-    stationScan.init(this, ssid, password, channel);
-    scheduler.addTask(stationScan.task);
     scheduler.enableAll();
 }
 
