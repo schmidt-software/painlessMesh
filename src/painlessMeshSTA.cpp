@@ -60,6 +60,7 @@ void ICACHE_FLASH_ATTR painlessMesh::manageStation(void) {
 
 //***********************************************************************
 void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
+    // TODO: move to StationScan
     debugMsg(GENERAL, "tcpConnect():\n");
 
     struct ip_info ipconfig;
@@ -165,22 +166,22 @@ void ICACHE_FLASH_ATTR StationScan::scanComplete(bss_info *bssInfo) {
     }
     staticThis->debugMsg(CONNECTION, "\tFound % d nodes\n", aps.size());
 
-    // Task filter all unknown
     task.delay(0);
     task.setCallback([this]() { 
-            filterAPs();
+        // Task filter all unknown
+        filterAPs();
 
-            // Next task is to sort by strength
-            task.setCallback([this] {
-                std::sort(aps.begin(), aps.end(),
-                        [](bss_info a, bss_info b) {
-                        return a.rssi > b.rssi;
-                });
-                // Next task is to connect to the top ap
-                task.setCallback([this]() { 
-                    connectToAP();
-                });
+        // Next task is to sort by strength
+        task.setCallback([this] {
+            std::sort(aps.begin(), aps.end(),
+                    [](bss_info a, bss_info b) {
+                    return a.rssi > b.rssi;
             });
+            // Next task is to connect to the top ap
+            task.setCallback([this]() { 
+                connectToAP();
+            });
+        });
     });
 }
 
@@ -212,7 +213,7 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
         if (statusCode == STATION_GOT_IP) {
             // if already connected -> scan slow
             mesh->debugMsg(CONNECTION, "connectToAP(): Already connected, and no unknown nodes found: scan rate set to slow\n", statusCode);
-            task.delay(random(10.0,20.0)*SCAN_INTERVAL); 
+            task.delay(random(50.0,80.0)*SCAN_INTERVAL); 
         } else {
             // else scan fast (SCAN_INTERVAL)
             mesh->debugMsg(CONNECTION, "connectToAP(): No unknown nodes found scan rate set to normal\n", statusCode);
@@ -237,9 +238,9 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
             mesh->debugMsg(CONNECTION, "connectToAP(): Unknown nodes found, reconfiguring network, scan rate set very slow\n", statusCode);
             // We were connected, but found unknown nodes, next scan will be delayed
             // to give rest of network time to reconfigure
-            task.delay(100*SCAN_INTERVAL); 
+            task.delay(500*SCAN_INTERVAL); 
         } else {
-            // Trying to connect, if that failse we will reconnect later
+            // Trying to connect, if that fails we will reconnect later
             mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to normal\n", statusCode);
             task.delay(SCAN_INTERVAL); 
         }

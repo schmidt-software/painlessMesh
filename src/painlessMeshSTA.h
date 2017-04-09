@@ -3,6 +3,8 @@
 
 #include <painlessScheduler.h>
 
+#define SCAN_INTERVAL       10000 // AP scan period in ms
+
 class painlessMesh;
 
 class StationScan {
