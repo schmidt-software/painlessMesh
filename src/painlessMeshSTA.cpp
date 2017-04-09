@@ -60,7 +60,7 @@ void ICACHE_FLASH_ATTR painlessMesh::manageStation(void) {
 
 //***********************************************************************
 void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
-    // TODO: move to StationScan
+    // TODO: move to Connection or StationConnection? 
     debugMsg(GENERAL, "tcpConnect():\n");
 
     struct ip_info ipconfig;
@@ -213,7 +213,7 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
         if (statusCode == STATION_GOT_IP) {
             // if already connected -> scan slow
             mesh->debugMsg(CONNECTION, "connectToAP(): Already connected, and no unknown nodes found: scan rate set to slow\n", statusCode);
-            task.delay(random(50.0,80.0)*SCAN_INTERVAL); 
+            task.delay(random(25.0,35.0)*SCAN_INTERVAL); 
         } else {
             // else scan fast (SCAN_INTERVAL)
             mesh->debugMsg(CONNECTION, "connectToAP(): No unknown nodes found scan rate set to normal\n", statusCode);
@@ -238,7 +238,7 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
             mesh->debugMsg(CONNECTION, "connectToAP(): Unknown nodes found, reconfiguring network, scan rate set very slow\n", statusCode);
             // We were connected, but found unknown nodes, next scan will be delayed
             // to give rest of network time to reconfigure
-            task.delay(500*SCAN_INTERVAL); 
+            task.delay(60*SCAN_INTERVAL); 
         } else {
             // Trying to connect, if that fails we will reconnect later
             mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to normal\n", statusCode);
