@@ -9,7 +9,6 @@ extern "C" {
 
 #include "painlessMesh.h"
 #include "painlessMeshSync.h"
-#include "painlessMeshSTA.h"
 
 
 painlessMesh* staticThis;
@@ -71,7 +70,7 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
     debugMsg(STARTUP, "init(): tcp_max_con=%u, nodeId = %u\n", espconn_tcp_get_max_con(), _nodeId);
 
 
-    stationScan(this, ssid, passowrd, channel);
+    stationScan.init(this, ssid, password, channel);
     scheduler.addTask(stationScan.task);
     scheduler.enableAll();
 }

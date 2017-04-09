@@ -17,8 +17,8 @@ extern "C" {
 #include "espconn.h"
 }
 
-class StationScan;
 #include "painlessMeshSync.h"
+#include "painlessMeshSTA.h"
 
 #define NODE_TIMEOUT        10000000  //uSecs
 #define MIN_FREE_MEMORY     16000 // Minimum free memory, besides here all packets in queue are discarded.

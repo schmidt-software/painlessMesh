@@ -16,6 +16,7 @@ extern "C" {
 #include "espconn.h"
 }
 
+#include "painlessMeshSTA.h"
 #include "painlessMesh.h"
 
 extern painlessMesh* staticThis;
@@ -241,11 +242,14 @@ uint32_t ICACHE_FLASH_ATTR painlessMesh::encodeNodeId(uint8_t *hwaddr) {
     return value;
 }
 
-void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo);
-void ICACHE_FLASH_ATTR filterAPs(
-        SimpleList<bss_info> &aps);
-void ICACHE_FLASH_ATTR connectToAP(
-        SimpleList<bss_info> &aps);
+void StationScan::init(painlessMesh *pMesh, String &pssid, String &ppassword, uint8_t pchannel) {
+    ssid = pssid; password = ppassword; channel= pchannel;
+        mesh = pMesh;
+
+        task.set(TASK_IMMEDIATE, TASK_FOREVER, [this](){
+                stationScan();
+                });
+    }
 
 // Starts scan for APs whose name is Mesh SSID 
 void ICACHE_FLASH_ATTR StationScan::stationScan() {
@@ -264,7 +268,7 @@ void ICACHE_FLASH_ATTR StationScan::stationScan() {
     if (!wifi_station_scan(&scanConfig, 
                 [](void *arg, STATUS status){
                     bss_info *bssInfo = (bss_info *) arg;
-                    //scanComplete(bssInfo);
+                    staticThis->stationScan.scanComplete(bssInfo);
                 })) {
         staticThis->debugMsg(ERROR, "wifi_station_scan() failed!?\n");
         return;
@@ -320,24 +324,32 @@ void ICACHE_FLASH_ATTR StationScan::filterAPs() {
 void ICACHE_FLASH_ATTR StationScan::connectToAP() {
     mesh->debugMsg(CONNECTION, "connectToAP():");
     // If aps empty, 
+    auto statusCode = wifi_station_get_connect_status();
     if (aps.size() == 0) {
-        auto statusCode = wifi_station_get_connect_status();
         if (statusCode == STATION_GOT_IP) {
     //      then if already connected -> scan slow (random(10.0,20.0)*SCAN_INTERVAL)
-            mesh->debugMsg(CONNECTION, "connectToBest(): No unknown nodes found scan state set to slow\n", statusCode);
+            mesh->debugMsg(CONNECTION, "connectToAP(): No unknown nodes found scan state set to slow\n", statusCode);
             task.setCallback([this]() {
                 stationScan();
                 });
             task
                 .delay(random(10.0,20.0)*SCAN_INTERVAL); 
+        } else {
+            //      else scan fast (SCAN_INTERVAL)
+            mesh->debugMsg(CONNECTION, "connectToAP(): No unknown nodes found scan state set to normal\n", statusCode);
+            task.setCallback([this]() {
+                    stationScan();
+                    });
+            task
+                .delay(SCAN_INTERVAL); 
+
         }
-        //      else scan fast (SCAN_INTERVAL)
     } else {
         // Else try to connect to first 
         auto ap = aps.begin();
         aps.pop_front();  // drop bestAP from mesh list, so if doesn't work out, we can try the next one
 
-        mesh->debugMsg(CONNECTION, "connectToBest(): Best AP is %u<---\n", 
+        mesh->debugMsg(CONNECTION, "connectToAP(): Best AP is %u<---\n", 
                 mesh->encodeNodeId(ap->bssid));
         struct station_config stationConf;
         stationConf.bssid_set = 1;
@@ -349,5 +361,24 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
         //    Set callback if connection fails to connectToAP immediately
         //   Rescan very slow (100*SCAN_INTERVAL) to give rest of mesh
         //   time to adapt.
+        if (statusCode == STATION_GOT_IP) {
+            task.setCallback([this]() {
+                    stationScan();
+                    });
+            mesh->debugMsg(CONNECTION, "connectToAP(): Unknown nodes found, reconfiguring network, scan rate set to slow\n", statusCode);
+            // We were connected, but found unknown nodes, next scan will be delayed
+            // to give rest of network time to reconfigure
+            task
+                .delay(100*SCAN_INTERVAL); 
+        } else {
+            // Trying to connect, if that failse we will reconnect later
+            mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to normal\n", statusCode);
+            task.setCallback([this]() {
+                    stationScan();
+                    });
+            task
+                .delay(SCAN_INTERVAL); 
+        }
+ 
     }
 }
