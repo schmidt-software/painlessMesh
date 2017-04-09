@@ -248,9 +248,7 @@ void ICACHE_FLASH_ATTR connectToAP(
         SimpleList<bss_info> &aps);
 
 // Starts scan for APs whose name is Mesh SSID 
-void ICACHE_FLASH_ATTR stationScan(
-        const String &ssid, 
-        const uint8_t channel) {
+void ICACHE_FLASH_ATTR StationScan::stationScan() {
     staticThis->debugMsg(CONNECTION, "stationScan(): %s\n", ssid.c_str());
 
     char tempssid[32];
@@ -266,7 +264,7 @@ void ICACHE_FLASH_ATTR stationScan(
     if (!wifi_station_scan(&scanConfig, 
                 [](void *arg, STATUS status){
                     bss_info *bssInfo = (bss_info *) arg;
-                    scanComplete(bssInfo);
+                    //scanComplete(bssInfo);
                 })) {
         staticThis->debugMsg(ERROR, "wifi_station_scan() failed!?\n");
         return;
@@ -274,41 +272,38 @@ void ICACHE_FLASH_ATTR stationScan(
     return;
 }
 
-void ICACHE_FLASH_ATTR scanComplete(bss_info *bssInfo) {
+void ICACHE_FLASH_ATTR StationScan::scanComplete(bss_info *bssInfo) {
     staticThis->debugMsg(CONNECTION, "scanComplete():-- > scan finished @ %u < --\n", staticThis->getNodeTime());
-
-    std::shared_ptr<SimpleList<bss_info> > aps_ptr( 
-        new SimpleList<bss_info>());
+    aps.clear();
 
     while (bssInfo != NULL) {
         staticThis->debugMsg(CONNECTION, "\tfound : % s, % ddBm", (char*) bssInfo->ssid, (int16_t) bssInfo->rssi);
         staticThis->debugMsg(CONNECTION, " MESH< ---");
-        aps_ptr->push_back(*bssInfo);
+        aps.push_back(*bssInfo);
         staticThis->debugMsg(CONNECTION, "\n");
         bssInfo = STAILQ_NEXT(bssInfo, next);
     }
-    staticThis->debugMsg(CONNECTION, "\tFound % d nodes\n", aps_ptr->size());
+    staticThis->debugMsg(CONNECTION, "\tFound % d nodes\n", aps.size());
 
     // Task filter all unknown
-    staticThis->taskStationScan.setCallback([aps_ptr]() { 
-            filterAPs(*aps_ptr);
+    task.setCallback([this]() { 
+            filterAPs();
 
             // Next task is to sort by strength
-            staticThis->taskStationScan.setCallback([aps_ptr] {
-                std::sort(aps_ptr->begin(), aps_ptr->end(),
+            task.setCallback([this] {
+                std::sort(aps.begin(), aps.end(),
                         [](bss_info a, bss_info b) {
                         return a.rssi > b.rssi;
                 });
                 // Next task is to connect to the top ap
-                staticThis->taskStationScan.setCallback([aps_ptr]() { 
-                    connectToAP(*aps_ptr);
+                task.setCallback([this]() { 
+                    connectToAP();
                 });
             });
     });
 }
 
-void ICACHE_FLASH_ATTR filterAPs(
-        SimpleList<bss_info> &aps) {
+void ICACHE_FLASH_ATTR StationScan::filterAPs() {
     auto ap = aps.begin();
     while (ap != aps.end()) {
         auto apNodeId = staticThis->encodeNodeId(ap->bssid);
@@ -322,13 +317,37 @@ void ICACHE_FLASH_ATTR filterAPs(
     }
 }
 
-void ICACHE_FLASH_ATTR connectToAP(
-        SimpleList<bss_info> &aps) {
+void ICACHE_FLASH_ATTR StationScan::connectToAP() {
+    mesh->debugMsg(CONNECTION, "connectToAP():");
     // If aps empty, 
-    //      then if already connected -> scan slow (10*SCAN_INTERVAL)
-    //      else scan fast (SCAN_INTERVAL)
-    // Else try to connect to first 
-    //      Delete first from list
-    //      Set callback if connection fails to connectToAP immediately
-    //   Rescan very slow (100*SCAN_INTERVAL)
+    if (aps.size() == 0) {
+        auto statusCode = wifi_station_get_connect_status();
+        if (statusCode == STATION_GOT_IP) {
+    //      then if already connected -> scan slow (random(10.0,20.0)*SCAN_INTERVAL)
+            mesh->debugMsg(CONNECTION, "connectToBest(): No unknown nodes found scan state set to slow\n", statusCode);
+            task.setCallback([this]() {
+                stationScan();
+                });
+            task
+                .delay(random(10.0,20.0)*SCAN_INTERVAL); 
+        }
+        //      else scan fast (SCAN_INTERVAL)
+    } else {
+        // Else try to connect to first 
+        auto ap = aps.begin();
+        aps.pop_front();  // drop bestAP from mesh list, so if doesn't work out, we can try the next one
+
+        mesh->debugMsg(CONNECTION, "connectToBest(): Best AP is %u<---\n", 
+                mesh->encodeNodeId(ap->bssid));
+        struct station_config stationConf;
+        stationConf.bssid_set = 1;
+        memcpy(&stationConf.bssid, ap->bssid, 6); // Connect to this specific HW Address
+        memcpy(&stationConf.ssid, ap->ssid, 32);
+        memcpy(&stationConf.password, password.c_str(), 64);
+        wifi_station_set_config(&stationConf);
+        wifi_station_connect();
+        //    Set callback if connection fails to connectToAP immediately
+        //   Rescan very slow (100*SCAN_INTERVAL) to give rest of mesh
+        //   time to adapt.
+    }
 }

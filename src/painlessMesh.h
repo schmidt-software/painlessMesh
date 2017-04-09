@@ -17,7 +17,7 @@ extern "C" {
 #include "espconn.h"
 }
 
-
+class StationScan;
 #include "painlessMeshSync.h"
 
 #define NODE_TIMEOUT        10000000  //uSecs
@@ -138,7 +138,7 @@ public:
     uint32_t            encodeNodeId(uint8_t *hwaddr);
 
     Scheduler scheduler;
-    Task taskStationScan; // Station scanning for connections
+    StationScan stationScan;
 
 #ifndef UNITY // Make everything public in unit test mode
 protected:
