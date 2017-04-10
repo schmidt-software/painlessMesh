@@ -468,6 +468,7 @@ void ICACHE_FLASH_ATTR painlessMesh::meshReconCb(void *arg, sint8 err) {
 //***********************************************************************
 // Wifi event handler
 void ICACHE_FLASH_ATTR painlessMesh::wifiEventCb(System_Event_t *event) {
+    stability = 0;
     switch (event->event) {
     case EVENT_STAMODE_CONNECTED:
         staticThis->debugMsg(CONNECTION, "wifiEventCb(): EVENT_STAMODE_CONNECTED ssid=%s\n", (char*)event->event_info.connected.ssid);
