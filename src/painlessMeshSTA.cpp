@@ -221,6 +221,16 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
 
         }
     } else {
+        if (statusCode == STATION_GOT_IP) {
+            mesh->debugMsg(CONNECTION, "connectToAP(): Unknown nodes found, reconfiguring network\n", statusCode);
+            // disconnect will trigger WifiEventCB, which will call 
+            // connectToAP()
+            wifi_station_disconnect();
+            // wifiEventCB should be triggered before this delay runs out
+            // and reset the connecting
+            task.delay(1000*SCAN_INTERVAL); 
+            // TODO: Double check whether disconnect also removes relevant subConnection
+        } 
         // Else try to connect to first 
         auto ap = aps.begin();
         aps.pop_front();  // drop bestAP from mesh list, so if doesn't work out, we can try the next one
@@ -234,15 +244,8 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
         memcpy(&stationConf.password, password.c_str(), 64);
         wifi_station_set_config(&stationConf);
         wifi_station_connect();
-        if (statusCode == STATION_GOT_IP) {
-            mesh->debugMsg(CONNECTION, "connectToAP(): Unknown nodes found, reconfiguring network, scan rate set very slow\n", statusCode);
-            // We were connected, but found unknown nodes, next scan will be delayed
-            // to give rest of network time to reconfigure
-            task.delay(60*SCAN_INTERVAL); 
-        } else {
-            // Trying to connect, if that fails we will reconnect later
-            mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to normal\n", statusCode);
-            task.delay(SCAN_INTERVAL); 
-        }
+        // Trying to connect, if that fails we will reconnect later
+        mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to normal\n", statusCode);
+        task.delay(SCAN_INTERVAL); 
     }
 }
