@@ -75,7 +75,7 @@ void ICACHE_FLASH_ATTR painlessMesh::manageConnections(void) {
         connLastRecieved = connection->lastReceived;
 
         if (nowNodeTime - connLastRecieved > nodeTimeOut) {
-            debugMsg(CONNECTION, "manageConnections(): dropping %d now= %u - last= %u ( %u ) > timeout= %u \n", connection->nodeId, nowNodeTime, connLastRecieved, nowNodeTime - connLastRecieved, nodeTimeOut);
+            debugMsg(CONNECTION, "manageConnections(): dropping %u now= %u - last= %u ( %u ) > timeout= %u \n", connection->nodeId, nowNodeTime, connLastRecieved, nowNodeTime - connLastRecieved, nodeTimeOut);
             connection = closeConnection(connection);
             if (changedConnectionsCallback)
                 changedConnectionsCallback(); // Connection dropped. Signal user
@@ -83,7 +83,7 @@ void ICACHE_FLASH_ATTR painlessMesh::manageConnections(void) {
         }
 
         if (connection->esp_conn->state == ESPCONN_CLOSE) {
-            debugMsg(CONNECTION, "manageConnections(): dropping %d ESPCONN_CLOSE\n", connection->nodeId);
+            debugMsg(CONNECTION, "manageConnections(): dropping %u ESPCONN_CLOSE\n", connection->nodeId);
             connection = closeConnection(connection);
             if (changedConnectionsCallback)
                 changedConnectionsCallback(); // Connection dropped. Signal user
@@ -267,6 +267,17 @@ String ICACHE_FLASH_ATTR painlessMesh::subConnectionJsonHelper(
 
     debugMsg(GENERAL, "subConnectionJson(): ret=%s\n", ret.c_str());
     return ret;
+}
+
+// Calculating the actual number of connected nodes is fairly expensive,
+// this calculates a cheap approximation
+size_t ICACHE_FLASH_ATTR painlessMesh::approxNoNodes() {
+    auto sc = subConnectionJson();
+    return approxNoNodes(sc);
+}
+
+size_t ICACHE_FLASH_ATTR painlessMesh::approxNoNodes(String &subConns) {
+    return max((long int) 1,round(subConns.length()/30.0));
 }
 
 //***********************************************************************
@@ -468,7 +479,7 @@ void ICACHE_FLASH_ATTR painlessMesh::meshReconCb(void *arg, sint8 err) {
 //***********************************************************************
 // Wifi event handler
 void ICACHE_FLASH_ATTR painlessMesh::wifiEventCb(System_Event_t *event) {
-    stability = 0;
+    staticThis->stability = 0;
     switch (event->event) {
     case EVENT_STAMODE_CONNECTED:
         staticThis->debugMsg(CONNECTION, "wifiEventCb(): EVENT_STAMODE_CONNECTED ssid=%s\n", (char*)event->event_info.connected.ssid);

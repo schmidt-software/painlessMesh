@@ -39,11 +39,6 @@ enum nodeMode {
     STA_AP
 };
 
-enum scanStatusType {
-    IDLE = 0,
-    SCANNING = 1
-};
-
 enum syncStatusType {
     NEEDED = 0,
     REQUESTED = 1,
@@ -174,6 +169,8 @@ protected:
     String              subConnectionJsonHelper(
                             SimpleList<meshConnectionType> &connections,
                             uint32_t exclude = 0);
+    size_t              approxNoNodes(); // estimate of numbers of node
+    size_t              approxNoNodes(String &subConns); // estimate of numbers of node
 
     // in painlessMeshSTA.cpp
     void                manageStation(void);
@@ -208,7 +205,6 @@ protected:
     uint8_t     _meshHidden;
     uint8_t     _meshMaxConn;
 
-    scanStatusType                  _scanStatus = IDLE; // STA scanning status
     nodeStatusType                  _nodeStatus = INITIALIZING;
     SimpleList<bss_info>            _meshAPs;
     SimpleList<meshConnectionType>  _connections;
@@ -220,6 +216,8 @@ protected:
 
     espconn     _stationConn;
     esp_tcp     _stationTcp;
+
+    friend class StationScan;
 };
 
 #endif //   _EASY_MESH_H_

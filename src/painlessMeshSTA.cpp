@@ -222,13 +222,17 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
         }
     } else {
         if (statusCode == STATION_GOT_IP) {
-            mesh->debugMsg(CONNECTION, "connectToAP(): Unknown nodes found, reconfiguring network\n", statusCode);
-            // disconnect will trigger WifiEventCB, which will call 
-            // connectToAP()
-            wifi_station_disconnect();
-            // wifiEventCB should be triggered before this delay runs out
-            // and reset the connecting
-            task.delay(1000*SCAN_INTERVAL); 
+            mesh->debugMsg(CONNECTION, "connectToAP(): Unknown nodes found. Current stability: %s\n", String(mesh->stability).c_str());
+            auto prob = mesh->stability/mesh->approxNoNodes();
+            if (random(0.0, 1.0) < prob) {
+                mesh->debugMsg(CONNECTION, "connectToAP(): Reconfigure network: %s\n", String(prob).c_str());
+                // disconnect will trigger WifiEventCB, which will call 
+                // connectToAP()
+                wifi_station_disconnect();
+                // wifiEventCB should be triggered before this delay runs out
+                // and reset the connecting
+                task.delay(1000*SCAN_INTERVAL); 
+            }
             // TODO: Double check whether disconnect also removes relevant subConnection
         } 
         // Else try to connect to first 
