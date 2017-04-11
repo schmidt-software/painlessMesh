@@ -213,13 +213,14 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
         if (statusCode == STATION_GOT_IP) {
             // if already connected -> scan slow
             mesh->debugMsg(CONNECTION, "connectToAP(): Already connected, and no unknown nodes found: scan rate set to slow\n", statusCode);
-            task.delay(random(25.0,35.0)*SCAN_INTERVAL); 
+            task.delay(random(25.0,35.0)*SCAN_INTERVAL);
         } else {
             // else scan fast (SCAN_INTERVAL)
             mesh->debugMsg(CONNECTION, "connectToAP(): No unknown nodes found scan rate set to normal\n", statusCode);
             task.delay(SCAN_INTERVAL); 
 
         }
+        mesh->stability = 1.0-(1.0-mesh->stability)*0.90;
     } else {
         if (statusCode == STATION_GOT_IP) {
             mesh->debugMsg(CONNECTION, "connectToAP(): Unknown nodes found. Current stability: %s\n", String(mesh->stability).c_str());
