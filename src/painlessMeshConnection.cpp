@@ -446,6 +446,7 @@ void ICACHE_FLASH_ATTR painlessMesh::meshSentCb(void *arg) {
 }
 //***********************************************************************
 void ICACHE_FLASH_ATTR painlessMesh::meshDisconCb(void *arg) {
+    staticThis->stability *= 0.5;
     struct espconn *disConn = (espconn *)arg;
 
     staticThis->debugMsg(CONNECTION, "meshDisconCb(): ");
@@ -479,7 +480,6 @@ void ICACHE_FLASH_ATTR painlessMesh::meshReconCb(void *arg, sint8 err) {
 //***********************************************************************
 // Wifi event handler
 void ICACHE_FLASH_ATTR painlessMesh::wifiEventCb(System_Event_t *event) {
-    staticThis->stability = 0;
     switch (event->event) {
     case EVENT_STAMODE_CONNECTED:
         staticThis->debugMsg(CONNECTION, "wifiEventCb(): EVENT_STAMODE_CONNECTED ssid=%s\n", (char*)event->event_info.connected.ssid);
