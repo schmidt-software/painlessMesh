@@ -259,7 +259,7 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
         wifi_station_set_config(&stationConf);
         wifi_station_connect();
         // Trying to connect, if that fails we will reconnect later
-        mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to normal\n", statusCode);
-        task.delay(SCAN_INTERVAL); 
+        mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to 4*normal\n", statusCode);
+        task.delay(4*SCAN_INTERVAL); 
     }
 }
