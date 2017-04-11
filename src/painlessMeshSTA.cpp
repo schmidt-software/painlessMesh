@@ -226,9 +226,17 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
             auto prob = mesh->stability/mesh->approxNoNodes();
             if (random(0.0, 1.0) < prob) {
                 mesh->debugMsg(CONNECTION, "connectToAP(): Reconfigure network: %s\n", String(prob).c_str());
-                // disconnect will trigger WifiEventCB, which will call 
+                // close STA connection, this will trigger station disconnect which will trigger 
                 // connectToAP()
-                wifi_station_disconnect();
+                auto conn = mesh->_connections.begin();
+                while (conn != mesh->_connections.end()) {
+                    if (conn->esp_conn->proto.tcp->local_port != mesh->_meshPort) {
+                        // We found the STA connection, close it
+                        mesh->closeConnection(conn);
+                        break;
+                    }
+                    conn++;
+                }
                 // wifiEventCB should be triggered before this delay runs out
                 // and reset the connecting
                 task.delay(1000*SCAN_INTERVAL); 
