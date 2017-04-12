@@ -218,7 +218,6 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
             // else scan fast (SCAN_INTERVAL)
             mesh->debugMsg(CONNECTION, "connectToAP(): No unknown nodes found scan rate set to normal\n", statusCode);
             task.delay(SCAN_INTERVAL); 
-
         }
         mesh->stability = 1.0-(1.0-mesh->stability)*0.90;
     } else {
@@ -242,24 +241,26 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
                 // wifiEventCB should be triggered before this delay runs out
                 // and reset the connecting
                 task.delay(1000*SCAN_INTERVAL); 
+            } else {
+                task.delay(random(4.0,6.0)*SCAN_INTERVAL); 
             }
-            // TODO: Double check whether disconnect also removes relevant subConnection
-        } 
-        // Else try to connect to first 
-        auto ap = aps.begin();
-        aps.pop_front();  // drop bestAP from mesh list, so if doesn't work out, we can try the next one
+        } else {
+            // Else try to connect to first 
+            auto ap = aps.begin();
+            aps.pop_front();  // drop bestAP from mesh list, so if doesn't work out, we can try the next one
 
-        mesh->debugMsg(CONNECTION, "connectToAP(): Best AP is %u<---\n", 
-                mesh->encodeNodeId(ap->bssid));
-        struct station_config stationConf;
-        stationConf.bssid_set = 1;
-        memcpy(&stationConf.bssid, ap->bssid, 6); // Connect to this specific HW Address
-        memcpy(&stationConf.ssid, ap->ssid, 32);
-        memcpy(&stationConf.password, password.c_str(), 64);
-        wifi_station_set_config(&stationConf);
-        wifi_station_connect();
-        // Trying to connect, if that fails we will reconnect later
-        mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to 4*normal\n", statusCode);
-        task.delay(4*SCAN_INTERVAL); 
+            mesh->debugMsg(CONNECTION, "connectToAP(): Best AP is %u<---\n", 
+                    mesh->encodeNodeId(ap->bssid));
+            struct station_config stationConf;
+            stationConf.bssid_set = 1;
+            memcpy(&stationConf.bssid, ap->bssid, 6); // Connect to this specific HW Address
+            memcpy(&stationConf.ssid, ap->ssid, 32);
+            memcpy(&stationConf.password, password.c_str(), 64);
+            wifi_station_set_config(&stationConf);
+            wifi_station_connect();
+            // Trying to connect, if that fails we will reconnect later
+            mesh->debugMsg(CONNECTION, "connectToAP(): Trying to connect, scan rate set to 4*normal\n", statusCode);
+            task.delay(4*SCAN_INTERVAL); 
+        }
     }
 }
