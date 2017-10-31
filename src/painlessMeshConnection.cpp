@@ -108,7 +108,6 @@ void ICACHE_FLASH_ATTR SentBuffer::clear() {
 
 void meshRecvCb(void * arg, AsyncClient *, void * data, size_t len);
 void tcpSentCb(void * arg, AsyncClient * tpcb, size_t len, uint32_t time);
-void timeoutCb(void * arg, AsyncClient * tpcb, uint32_t time);
 
 ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painlessMesh *pMesh, bool is_station) {
     station = is_station;
@@ -124,29 +123,21 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painle
 
     client->onAck(tcpSentCb, arg); 
 
-    client->onError([](void * arg, AsyncClient *client, int8_t err) {
-        if (arg == NULL) {
-            staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection NULL %d\n", err);
-            client->close(true);
-        }
-        else {
-            staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection %d\n", err);
-            staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection closing\n");
-            auto conn = static_cast<MeshConnection*>(arg);
-            conn->close(false);
-        }
-    }, arg);
-
     if (station) { // we are the station, start nodeSync
         staticThis->debugMsg(CONNECTION, "meshConnectedCb(): we are STA\n");
     } else {
         staticThis->debugMsg(CONNECTION, "meshConnectedCb(): we are AP\n");
     }
 
+    client->onError([](void * arg, AsyncClient *client, int8_t err) {
+        staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection %s\n", client->errorToString(err));
+    }, arg);
+ 
     client->onDisconnect([](void *arg, AsyncClient *client) {
         if (arg == NULL) {
             staticThis->debugMsg(CONNECTION, "onDisconnect(): MeshConnection NULL\n");
-            client->close(true);
+            if (client->connected())
+                client->close(true);
             return;
         }
         auto conn = static_cast<MeshConnection*>(arg);
@@ -193,14 +184,24 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painle
 
 ICACHE_FLASH_ATTR MeshConnection::~MeshConnection() {
     staticThis->debugMsg(CONNECTION, "~MeshConnection():\n");
+    this->close();
+    if (!client->freeable()) {
+        mesh->debugMsg(CONNECTION, "~MeshConnection(): Closing pcb\n");
+        client->close(true);
+    }
     client->abort();
     delete client;
     /*if (esp_conn)
         espconn_disconnect(esp_conn);*/
 }
 
-void ICACHE_FLASH_ATTR MeshConnection::close(bool close_pcb) {
+void ICACHE_FLASH_ATTR MeshConnection::close() {
+    if (!connected)
+        return;
+    
     staticThis->debugMsg(CONNECTION, "MeshConnection::close().\n");
+    this->connected = false;
+
     this->timeSyncTask.setCallback(NULL);
     this->nodeSyncTask.setCallback(NULL);
     this->readBufferTask.setCallback(NULL);
@@ -225,18 +226,19 @@ void ICACHE_FLASH_ATTR MeshConnection::close(bool close_pcb) {
     mesh->scheduler.addTask(staticThis->droppedConnectionTask);
     mesh->droppedConnectionTask.enable();
 
-    if (close_pcb) {
+    if (client->connected()) {
         mesh->debugMsg(CONNECTION, "close(): Closing pcb\n");
-        if (client->connected())
-            client->close();
+        client->close();
     }
 
-    this->connected = false;
-
-    if (station && close_pcb) {
+    if (station) {
         staticThis->debugMsg(CONNECTION, "close(): call esp_wifi_disconnect().\n");
         esp_wifi_disconnect();
     }
+
+    receiveBuffer.clear();
+    sentBuffer.clear();
+
     mesh->eraseClosedConnections();
 
     if (station && mesh->_station_got_ip)
@@ -321,7 +323,7 @@ void ICACHE_FLASH_ATTR painlessMesh::onNewConnection(newConnectionCallback_t cb)
 }
 
 void ICACHE_FLASH_ATTR painlessMesh::onDroppedConnection(droppedConnectionCallback_t cb) {
-    debugMsg(GENERAL, "onNewConnection():\n");
+    debugMsg(GENERAL, "onDroppedConnection():\n");
     droppedConnectionCallback = cb;
 }
 
@@ -478,7 +480,6 @@ size_t ICACHE_FLASH_ATTR painlessMesh::approxNoNodes(String &subConns) {
 
 //***********************************************************************
 std::list<uint32_t> ICACHE_FLASH_ATTR painlessMesh::getNodeList() {
-
     std::list<uint32_t> nodeList;
 
     String nodeJson = subConnectionJson();
@@ -526,6 +527,7 @@ void ICACHE_FLASH_ATTR meshRecvCb(void * arg, AsyncClient *client, void * data, 
 
     // Signal that we are done
     client->ack(len); // ackLater?
+    //client->ackLater();
     //tcp_recved(receiveConn->pcb, total_length);
 
     receiveConn->readBufferTask.forceNextIteration(); 

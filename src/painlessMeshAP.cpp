@@ -67,13 +67,15 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpServerInit() {
     debugMsg(GENERAL, "tcpServerInit():\n");
 
     _tcpListener = new AsyncServer(_meshPort);
-    _tcpListener->begin();
+    _tcpListener->setNoDelay(true);
 
     _tcpListener->onClient([](void * arg, AsyncClient *client) {
         staticThis->debugMsg(CONNECTION, "New AP connection incoming\n");
         auto conn = std::make_shared<MeshConnection>(client, staticThis, false);
         staticThis->_connections.push_back(conn);
     }, NULL);
+
+    _tcpListener->begin();
 
     debugMsg(STARTUP, "AP tcp server established on port %d\n", _meshPort);
     return;

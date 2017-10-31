@@ -85,7 +85,7 @@ class MeshConnection {
 
         void handleMessage(String &msg, uint32_t receivedAt);
 
-        void close(bool close_client = true);
+        void close();
         friend class painlessMesh;
 };
 #endif

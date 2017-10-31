@@ -56,8 +56,10 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
         AsyncClient *pConn = new AsyncClient();
 
         pConn->onError([](void *, AsyncClient * client, int8_t err) {
-                staticThis->debugMsg(CONNECTION, "tcp_err(): tcpStationConnection %d\n", err);
+            staticThis->debugMsg(CONNECTION, "tcp_err(): tcpStationConnection %d\n", err);
+            if (client->connected())
                 client->close();
+            esp_wifi_disconnect();
         });
 
         auto ip = ipconfig.gw;
