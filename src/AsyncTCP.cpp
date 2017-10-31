@@ -19,8 +19,6 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef ESP32
-
 #include "Arduino.h"
 
 #include "AsyncTCP.h"
@@ -31,6 +29,7 @@ extern "C"{
 #include "lwip/dns.h"
 }
 
+#ifdef ESP32
 /*
  * TCP/IP Event Task
  * */
@@ -194,7 +193,6 @@ static void _tcp_error(void * arg, int8_t err) {
  * */
 
 #include "lwip/priv/tcpip_priv.h"
-
 typedef struct {
     struct tcpip_api_call call;
     tcp_pcb * pcb;
@@ -336,6 +334,30 @@ static tcp_pcb * _tcp_listen_with_backlog(tcp_pcb * pcb, uint8_t backlog) {
     return msg.pcb;
 }
 #define _tcp_listen(p) _tcp_listen_with_backlog(p, 0xFF);
+#else
+#include "espInterface.h"
+
+void ICACHE_FLASH_ATTR log_w(const char* format ...) {
+}
+
+void ICACHE_FLASH_ATTR log_e(const char* format ...) {
+}
+
+const auto& _tcp_connect = tcp_connect;
+const auto& _tcp_err = tcp_err;
+const auto& _tcp_write = tcp_write;
+const auto& _tcp_output = tcp_output;
+const auto& _tcp_recved = tcp_recved;
+const auto& _tcp_listen_with_backlog = tcp_listen_with_backlog;
+const auto& _tcp_bind = tcp_bind;
+const auto& _tcp_close = tcp_close;
+const auto& _tcp_abort = tcp_abort;
+
+const auto& _tcp_recv = AsyncClient::_s_recv;
+const auto& _tcp_sent = AsyncClient::_s_sent;
+const auto& _tcp_error = AsyncClient::_s_error;
+const auto& _tcp_poll = AsyncClient::_s_poll;
+#endif
 
 
 
@@ -389,6 +411,7 @@ bool AsyncClient::connect(IPAddress ip, uint16_t port){
         log_w("already connected, state %d", _pcb->state);
         return false;
     }
+#ifdef ESP32
     if(!_start_async_task()){
         log_e("failed to start task");
         return false;
@@ -399,6 +422,12 @@ bool AsyncClient::connect(IPAddress ip, uint16_t port){
     addr.u_addr.ip4.addr = ip;
 
     tcp_pcb* pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
+#else
+    ip_addr_t addr;
+    addr.addr = ip;
+    tcp_pcb* pcb = tcp_new();
+#endif
+
     if (!pcb){
         log_e("pcb == NULL");
         return false;
@@ -551,7 +580,11 @@ int8_t AsyncClient::_poll(tcp_pcb* pcb){
 void AsyncClient::_dns_found(ip_addr_t *ipaddr){
     _in_lwip_thread = true;
     if(ipaddr){
+#ifdef ESP32
         connect(IPAddress(ipaddr->u_addr.ip4.addr), _connect_port);
+#else
+        connect(IPAddress(ipaddr->addr), _connect_port);
+#endif
     } else {
         log_e("dns fail");
         if(_error_cb)
@@ -570,7 +603,11 @@ bool AsyncClient::connect(const char* host, uint16_t port){
     ip_addr_t addr;
     err_t err = dns_gethostbyname(host, &addr, (dns_found_callback)&_s_dns_found, this);
     if(err == ERR_OK) {
+#ifdef ESP32
         return connect(IPAddress(addr.u_addr.ip4.addr), port);
+#else
+        return connect(IPAddress(addr.addr), port);
+#endif
     } else if(err == ERR_INPROGRESS) {
         _connect_port = port;
         return true;
@@ -739,7 +776,12 @@ uint16_t AsyncClient::getMss(){
 uint32_t AsyncClient::getRemoteAddress() {
     if(!_pcb)
         return 0;
+#ifdef ESP32
     return _pcb->remote_ip.u_addr.ip4.addr;
+#else
+    return _pcb->remote_ip.addr;
+#endif
+
 }
 
 uint16_t AsyncClient::getRemotePort() {
@@ -751,7 +793,11 @@ uint16_t AsyncClient::getRemotePort() {
 uint32_t AsyncClient::getLocalAddress() {
     if(!_pcb)
         return 0;
+#ifdef ESP32
     return _pcb->local_ip.u_addr.ip4.addr;
+#else
+    return _pcb->local_ip.addr;
+#endif
 }
 
 uint16_t AsyncClient::getLocalPort() {
@@ -996,11 +1042,12 @@ void AsyncServer::begin(){
     if(_pcb)
         return;
 
+    int8_t err;
+#ifdef ESP32
     if(!_start_async_task()){
         log_e("failed to start task");
         return;
     }
-    int8_t err;
     _pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
     if (!_pcb){
         log_e("_pcb == NULL");
@@ -1010,6 +1057,16 @@ void AsyncServer::begin(){
     ip_addr_t local_addr;
     local_addr.type = IPADDR_TYPE_V4;
     local_addr.u_addr.ip4.addr = (uint32_t) _addr;
+#else
+    _pcb = tcp_new();
+    if (!_pcb){
+        log_e("_pcb == NULL");
+        return;
+    }
+
+    ip_addr_t local_addr;
+    local_addr.addr = (uint32_t) _addr;
+#endif
     err = _tcp_bind(_pcb, &local_addr, _port);
 
     if (err != ERR_OK) {
@@ -1055,6 +1112,3 @@ uint8_t AsyncServer::status(){
         return 0;
     return _pcb->state;
 }
-
-#else
-#endif

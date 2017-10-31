@@ -22,11 +22,15 @@
 #ifndef ASYNCTCP_H_
 #define ASYNCTCP_H_
 
+#include "espInterface.h"
 #include "IPAddress.h"
 #include <functional>
+
+#ifdef ESP32
 extern "C" {
 #include "freertos/semphr.h"
 }
+#endif
 
 class AsyncClient;
 
@@ -78,7 +82,7 @@ class AsyncClient {
     void _error(int8_t err);
     int8_t _poll(tcp_pcb* pcb);
     int8_t _sent(tcp_pcb* pcb, uint16_t len);
-    void _dns_found(struct _ip_addr *ipaddr);
+    void _dns_found(ip_addr_t *ipaddr);
 
 
   public:
@@ -155,7 +159,7 @@ class AsyncClient {
     static void _s_error(void *arg, int8_t err);
     static int8_t _s_sent(void *arg, struct tcp_pcb *tpcb, uint16_t len);
     static int8_t _s_connected(void* arg, void* tpcb, int8_t err);
-    static void _s_dns_found(const char *name, struct _ip_addr *ipaddr, void *arg);
+    static void _s_dns_found(const char *name, ip_addr_t *ipaddr, void *arg);
 
     bool _in_lwip_thread;
 };
