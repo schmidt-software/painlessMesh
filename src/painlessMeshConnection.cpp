@@ -191,7 +191,7 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painle
 
 ICACHE_FLASH_ATTR MeshConnection::~MeshConnection() {
     staticThis->debugMsg(CONNECTION, "~MeshConnection():\n");
-    client->close();
+    client->abort();
     delete client;
     /*if (esp_conn)
         espconn_disconnect(esp_conn);*/
@@ -233,7 +233,6 @@ void ICACHE_FLASH_ATTR MeshConnection::close(bool close_pcb) {
 
     if (station && close_pcb) {
         staticThis->debugMsg(CONNECTION, "close(): call esp_wifi_disconnect().\n");
-        mesh->_tcpStationConnection->close(true);
         esp_wifi_disconnect();
     }
     mesh->eraseClosedConnections();

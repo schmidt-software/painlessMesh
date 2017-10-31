@@ -53,9 +53,9 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
 
     if (_station_got_ip && 
             ipconfig.ip.addr != 0) {
-        _tcpStationConnection = new AsyncClient();
+        AsyncClient *pConn = new AsyncClient();
 
-        _tcpStationConnection->onError([](void *, AsyncClient * client, int8_t err) {
+        pConn->onError([](void *, AsyncClient * client, int8_t err) {
                 staticThis->debugMsg(CONNECTION, "tcp_err(): tcpStationConnection %d\n", err);
                 client->close();
         });
@@ -73,13 +73,13 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
         auto ip_tmp = ip;
 #endif
 */
-        _tcpStationConnection->onConnect([](void *, AsyncClient *client) {
+        pConn->onConnect([](void *, AsyncClient *client) {
                     staticThis->debugMsg(CONNECTION, "New STA connection incoming\n");
                     auto conn = std::make_shared<MeshConnection>(client, staticThis, true);
                     staticThis->_connections.push_back(conn);
         }, NULL); 
 
-        _tcpStationConnection->connect(IPAddress(ip.addr), stationScan.port);
+        pConn->connect(IPAddress(ip.addr), stationScan.port);
      } else {
         debugMsg(ERROR, "tcpConnect(): err Something un expected in tcpConnect()\n");
     }

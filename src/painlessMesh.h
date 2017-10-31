@@ -185,7 +185,6 @@ protected:
 
     AsyncServer  *_tcpListener;
 
-    AsyncClient  *_tcpStationConnection;
     bool         _station_got_ip = false;
 
     Task droppedConnectionTask;
