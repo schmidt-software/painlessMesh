@@ -11,6 +11,8 @@
 
 #include "painlessMesh.h"
 
+//#include "lwip/priv/tcpip_priv.h"
+
 extern painlessMesh* staticThis;
 
 static temp_buffer_t shared_buffer;
@@ -44,17 +46,6 @@ void ICACHE_FLASH_ATTR ReceiveBuffer::push(const char * cstr,
         }
     } while (length > 0);
     staticThis->debugMsg(COMMUNICATION, "ReceiveBuffer::push(): buffer size=%u, %u\n", jsonStrings.size(), buffer.length());
-}
-
-void ICACHE_FLASH_ATTR ReceiveBuffer::push(pbuf * p, temp_buffer_t &buf) {
-    auto curr_p = p;
-    do {
-        push(static_cast<const char*>(curr_p->payload), curr_p->len, buf);
-        if (curr_p->len != curr_p->tot_len && curr_p->next != NULL)
-            curr_p = curr_p->next;
-        else
-            break;
-    } while(true);
 }
 
 String ICACHE_FLASH_ATTR ReceiveBuffer::front() {
@@ -115,34 +106,33 @@ void ICACHE_FLASH_ATTR SentBuffer::clear() {
 }
 
 
-err_t meshRecvCb(void * arg, tcp_pcb * tpcb, pbuf * p, err_t err);
-err_t tcpSentCb(void * arg, tcp_pcb * tpcb, u16_t len);
+void meshRecvCb(void * arg, AsyncClient *, void * data, size_t len);
+void tcpSentCb(void * arg, AsyncClient * tpcb, size_t len, uint32_t time);
+void timeoutCb(void * arg, AsyncClient * tpcb, uint32_t time);
 
-ICACHE_FLASH_ATTR MeshConnection::MeshConnection(tcp_pcb *tcp, painlessMesh *pMesh, bool is_station) {
+ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painlessMesh *pMesh, bool is_station) {
     station = is_station;
     mesh = pMesh;
-    pcb = tcp;
+    client = client_ptr;
 
-    pcb->so_options |= SOF_KEEPALIVE;
+    client->setNoDelay(true);
 
-    tcp_arg(pcb, static_cast<void*>(this));
+    //tcp_arg(pcb, static_cast<void*>(this));
+    auto arg = static_cast<void*>(this);
+    client->onData(meshRecvCb, arg); 
 
-    tcp_recv(pcb, meshRecvCb);
+    client->onAck(tcpSentCb, arg); 
 
-    tcp_sent(pcb, tcpSentCb);
-
-    tcp_nagle_disable(pcb);
-    tcp_err(pcb, [](void * arg, err_t err) {
-        if (arg == NULL)
+    client->onError([](void * arg, AsyncClient *client, int8_t err) {
+        if (arg == NULL) {
             staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection NULL %d\n", err);
+            client->close(true);
+        }
         else {
             staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection %d\n", err);
-            if (err == ERR_ABRT || 
-                    err == ERR_RST) {
-                staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection closing\n");
-                auto conn = static_cast<MeshConnection*>(arg);
-                conn->close(false);
-            }
+            staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection closing\n");
+            auto conn = static_cast<MeshConnection*>(arg);
+            conn->close(false);
         }
     });
 
@@ -172,7 +162,7 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(tcp_pcb *tcp, painlessMesh *pMe
         staticThis->debugMsg(SYNC, "nodeSyncTask(): \n");
         staticThis->debugMsg(SYNC, "nodeSyncTask(): request with %u\n", 
                 this->nodeId);
-        auto saveConn = staticThis->findConnection(this->pcb);
+        auto saveConn = staticThis->findConnection(client);
         String subs = staticThis->subConnectionJson(saveConn);
         staticThis->sendMessage(saveConn, this->nodeId, 
                 staticThis->_nodeId, NODE_SYNC_REQUEST, subs, true);
@@ -201,6 +191,8 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(tcp_pcb *tcp, painlessMesh *pMe
 
 ICACHE_FLASH_ATTR MeshConnection::~MeshConnection() {
     staticThis->debugMsg(CONNECTION, "~MeshConnection():\n");
+    client->close();
+    delete client;
     /*if (esp_conn)
         espconn_disconnect(esp_conn);*/
 }
@@ -234,21 +226,14 @@ void ICACHE_FLASH_ATTR MeshConnection::close(bool close_pcb) {
 
     if (close_pcb) {
         mesh->debugMsg(CONNECTION, "close(): Closing pcb\n");
-        tcp_arg(this->pcb, NULL);
-        auto err = tcp_close(this->pcb);
-        if (err != ERR_OK) {
-            mesh->debugMsg(ERROR, "close(): Failed to close the connection\n");
-        }
+        client->close(true);
     }
 
     this->connected = false;
 
     if (station && close_pcb) {
         staticThis->debugMsg(CONNECTION, "close(): call esp_wifi_disconnect().\n");
-        auto err = tcp_close(mesh->_tcpStationConnection);
-        if (err != ERR_OK) {
-            mesh->debugMsg(ERROR, "close(): Failed to close station connection\n");
-        }
+        mesh->_tcpStationConnection->close(true);
         esp_wifi_disconnect();
     }
     mesh->eraseClosedConnections();
@@ -292,23 +277,25 @@ bool ICACHE_FLASH_ATTR MeshConnection::writeNext() {
         return false;
     }
     auto len = sentBuffer.requestLength(shared_buffer.length);
-    auto snd_len = tcp_sndbuf(pcb);
+    auto snd_len = client->space();
     if (len > snd_len)
         len = snd_len;
     if (len > 0) {
         sentBuffer.read(len, shared_buffer);
-        auto errCode = tcp_write(pcb, static_cast<const void*>(shared_buffer.buffer), len, TCP_WRITE_FLAG_COPY);
-        if (errCode == ERR_OK) {
+        auto written = client->write(shared_buffer.buffer, len, 1);
+        if (written == len) {
             staticThis->debugMsg(COMMUNICATION, "writeNext(): Package sent = %s\n", shared_buffer.buffer);
-#ifndef ESP32 // This seems to sometimes causes crashes on ESP32
-            tcp_output(pcb); // TODO only do this for priority messages
-#endif
+            client->send(); // TODO only do this for priority messages
             sentBuffer.freeRead();
             writeNext();
             return true;
+        } else if (written == 0) {
+            sendReady = false;
+            staticThis->debugMsg(COMMUNICATION, "writeNext(): tcp_write Failed node=%u. Resending later\n", nodeId);
+            return false;
         } else {
             sendReady = false;
-            staticThis->debugMsg(COMMUNICATION, "writeNext(): tcp_write Failed node=%u, err=%d. Resending later\n", nodeId, errCode);
+            staticThis->debugMsg(ERROR, "writeNext(): Less written than requested. Please report bug on the issue tracker\n");
             return false;
         }
     } else {
@@ -430,11 +417,11 @@ std::shared_ptr<MeshConnection> ICACHE_FLASH_ATTR painlessMesh::findConnection(u
 }
 
 //***********************************************************************
-std::shared_ptr<MeshConnection>  ICACHE_FLASH_ATTR painlessMesh::findConnection(tcp_pcb *conn) {
-    debugMsg(GENERAL, "In findConnection(esp_conn) conn=0x%x\n", conn);
+std::shared_ptr<MeshConnection>  ICACHE_FLASH_ATTR painlessMesh::findConnection(AsyncClient *client) {
+    debugMsg(GENERAL, "In findConnection(esp_conn) conn=0x%x\n", client);
 
     for (auto &&connection : _connections) {
-        if (connection->pcb == conn) {
+        if ((*connection->client) == (*client)) {
             return connection;
         }
     }
@@ -516,28 +503,20 @@ std::list<uint32_t> ICACHE_FLASH_ATTR painlessMesh::getNodeList() {
 }
 
 //***********************************************************************
-err_t ICACHE_FLASH_ATTR tcpSentCb(void * arg, tcp_pcb * tpcb, u16_t len) {
+void ICACHE_FLASH_ATTR tcpSentCb(void * arg, AsyncClient * client, size_t len, uint32_t time) {
     if (arg == NULL) {
         staticThis->debugMsg(COMMUNICATION, "tcpSentCb(): no valid connection found\n");
-        return ERR_OK;
     }
     auto conn = static_cast<MeshConnection*>(arg);
     conn->sendReady = true;
     conn->writeNext();
-    return ESP_OK;
 }
 
-err_t ICACHE_FLASH_ATTR meshRecvCb(void * arg, tcp_pcb * tpcb,
-                              pbuf *p, err_t err) {
+void ICACHE_FLASH_ATTR meshRecvCb(void * arg, AsyncClient *client, void * data, size_t len) {
     if (arg == NULL) {
         staticThis->debugMsg(COMMUNICATION, "meshRecvCb(): no valid connection found\n");
-        return !ERR_OK;
     }
     auto receiveConn = static_cast<MeshConnection*>(arg);
-    if (p == NULL) {
-        receiveConn->close();
-        return ERR_OK;
-    }
 
     uint32_t receivedAt = staticThis->getNodeTime();
 
@@ -546,20 +525,13 @@ err_t ICACHE_FLASH_ATTR meshRecvCb(void * arg, tcp_pcb * tpcb,
     // reset timeout 
     receiveConn->nodeTimeoutTask.delay(NODE_TIMEOUT);
 
-    size_t total_length = p->tot_len;
-    if (total_length == 0) {
-        pbuf_free(p);
-        return ERR_OK;
-    }
-
-    receiveConn->receiveBuffer.push(p, shared_buffer);
-    pbuf_free(p);
+    receiveConn->receiveBuffer.push(static_cast<const char*>(data), len, shared_buffer);
 
     // Signal that we are done
-    tcp_recved(receiveConn->pcb, total_length);
+    client->ack(len); // ackLater?
+    //tcp_recved(receiveConn->pcb, total_length);
 
     receiveConn->readBufferTask.forceNextIteration(); 
-    return ERR_OK;
 }
 
 void ICACHE_FLASH_ATTR MeshConnection::handleMessage(String &buffer, uint32_t receivedAt) {
@@ -577,7 +549,7 @@ void ICACHE_FLASH_ATTR MeshConnection::handleMessage(String &buffer, uint32_t re
 
     staticThis->debugMsg(COMMUNICATION, "meshRecvCb(): lastRecieved=%u fromId=%u type=%d\n", staticThis->getNodeTime(), this->nodeId, t_message);
 
-    auto rConn = staticThis->findConnection(this->pcb);
+    auto rConn = staticThis->findConnection(this->client);
     switch (t_message) {
     case NODE_SYNC_REQUEST:
     case NODE_SYNC_REPLY:

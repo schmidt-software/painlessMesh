@@ -53,10 +53,11 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
 
     if (_station_got_ip && 
             ipconfig.ip.addr != 0) {
-        _tcpStationConnection = tcp_new();
+        _tcpStationConnection = new AsyncClient();
 
-        tcp_err(_tcpStationConnection, [](void * arg, err_t err) {
+        _tcpStationConnection->onError([](void *, AsyncClient * client, int8_t err) {
                 staticThis->debugMsg(CONNECTION, "tcp_err(): tcpStationConnection %d\n", err);
+                client->close();
         });
 
         auto ip = ipconfig.gw;
@@ -64,20 +65,21 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
             //ip = stationScan.manualIP;
             memcpy(&ip, &stationScan.manualIP, 4);
 
+/*
 #ifdef ESP32
         ip_addr_t ip_tmp;
         ip_tmp.u_addr.ip4 = ip;
 #else
         auto ip_tmp = ip;
 #endif
-
-        tcp_connect(_tcpStationConnection, &ip_tmp, stationScan.port, 
-                [](void * arg, tcp_pcb *newpcb, err_t err) {
+*/
+        _tcpStationConnection->onConnect([](void *, AsyncClient *client) {
                     staticThis->debugMsg(CONNECTION, "New STA connection incoming\n");
-                    auto conn = std::make_shared<MeshConnection>(newpcb, staticThis, true);
+                    auto conn = std::make_shared<MeshConnection>(client, staticThis, true);
                     staticThis->_connections.push_back(conn);
-                    return err;
-        });
+        }, NULL); 
+
+        _tcpStationConnection->connect(IPAddress(ip.addr), stationScan.port);
      } else {
         debugMsg(ERROR, "tcpConnect(): err Something un expected in tcpConnect()\n");
     }
