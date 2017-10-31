@@ -116,6 +116,7 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painle
     client = client_ptr;
 
     client->setNoDelay(true);
+    client->setRxTimeout(NODE_TIMEOUT/TASK_SECOND);
 
     //tcp_arg(pcb, static_cast<void*>(this));
     auto arg = static_cast<void*>(this);
@@ -134,7 +135,7 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painle
             auto conn = static_cast<MeshConnection*>(arg);
             conn->close(false);
         }
-    });
+    }, arg);
 
     if (station) { // we are the station, start nodeSync
         staticThis->debugMsg(CONNECTION, "meshConnectedCb(): we are STA\n");
@@ -142,16 +143,17 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painle
         staticThis->debugMsg(CONNECTION, "meshConnectedCb(): we are AP\n");
     }
 
-    this->nodeTimeoutTask.set(
-            NODE_TIMEOUT, TASK_ONCE, [this](){
-        staticThis->debugMsg(CONNECTION, "nodeTimeoutTask():\n");
-        staticThis->debugMsg(CONNECTION, "nodeTimeoutTask(): dropping %u now= %u\n", nodeId, staticThis->getNodeTime());
-
-        this->close();
-    });
-
-    staticThis->scheduler.addTask(this->nodeTimeoutTask);
-    this->nodeTimeoutTask.enableDelayed();
+    client->onDisconnect([](void *arg, AsyncClient *client) {
+        if (arg == NULL) {
+            staticThis->debugMsg(CONNECTION, "onDisconnect(): MeshConnection NULL\n");
+            client->close(true);
+            return;
+        }
+        auto conn = static_cast<MeshConnection*>(arg);
+        staticThis->debugMsg(CONNECTION, "onDisconnect():\n");
+        staticThis->debugMsg(CONNECTION, "onDisconnect(): dropping %u now= %u\n", conn->nodeId, staticThis->getNodeTime());
+        conn->close();
+    }, arg);
 
     auto syncInterval = NODE_TIMEOUT/2;
     if (!station)
@@ -201,7 +203,6 @@ void ICACHE_FLASH_ATTR MeshConnection::close(bool close_pcb) {
     staticThis->debugMsg(CONNECTION, "MeshConnection::close().\n");
     this->timeSyncTask.setCallback(NULL);
     this->nodeSyncTask.setCallback(NULL);
-    this->nodeTimeoutTask.setCallback(NULL);
     this->readBufferTask.setCallback(NULL);
     this->nodeId = 0;
 
@@ -226,7 +227,8 @@ void ICACHE_FLASH_ATTR MeshConnection::close(bool close_pcb) {
 
     if (close_pcb) {
         mesh->debugMsg(CONNECTION, "close(): Closing pcb\n");
-        client->close(true);
+        if (client->connected())
+            client->close();
     }
 
     this->connected = false;
@@ -449,7 +451,6 @@ String ICACHE_FLASH_ATTR painlessMesh::subConnectionJsonHelper(
         if (!sub->connected) {
             debugMsg(ERROR, "subConnectionJsonHelper(): Found closed connection %u\n", 
                     sub->nodeId);
-            sub->nodeTimeoutTask.forceNextIteration();
         } else if (sub->nodeId != exclude && sub->nodeId != 0) {  //exclude connection that we are working with & anything too new.
             if (ret.length() > 1)
                 ret += String(",");
@@ -520,9 +521,6 @@ void ICACHE_FLASH_ATTR meshRecvCb(void * arg, AsyncClient *client, void * data, 
     uint32_t receivedAt = staticThis->getNodeTime();
 
     staticThis->debugMsg(COMMUNICATION, "meshRecvCb(): fromId=%u\n", receiveConn ? receiveConn->nodeId : 0);
-
-    // reset timeout 
-    receiveConn->nodeTimeoutTask.delay(NODE_TIMEOUT);
 
     receiveConn->receiveBuffer.push(static_cast<const char*>(data), len, shared_buffer);
 

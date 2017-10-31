@@ -76,7 +76,6 @@ class MeshConnection {
         ReceiveBuffer       receiveBuffer;
         SentBuffer          sentBuffer;
 
-        Task nodeTimeoutTask;
         Task nodeSyncTask;
         Task timeSyncTask;
         Task readBufferTask;
