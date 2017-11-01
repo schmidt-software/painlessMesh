@@ -247,9 +247,12 @@ void ICACHE_FLASH_ATTR MeshConnection::close() {
 
 
 bool ICACHE_FLASH_ATTR MeshConnection::addMessage(String &message, bool priority) {
+    /*
     mesh->debugMsg(DEBUG, "No connections: %u, sentMessages: %u, receiveMessages: %u, station: %u, canSend: %u, nodeId: %u\n",
             mesh->_connections.size(), sentBuffer.jsonStrings.size(), receiveBuffer.jsonStrings.size(), station, client->canSend(), nodeId);
-    // Station 1 and 2751720597
+    if (receiveBuffer.jsonStrings.size() > 3)
+        mesh->debugMsg(DEBUG, "Msg %s\n", message.c_str());
+    */
     if (ESP.getFreeHeap() - message.length() >= MIN_FREE_MEMORY) { // If memory heap is enough, queue the message
         if (priority) {
             sentBuffer.push(message, priority);
@@ -399,10 +402,14 @@ bool ICACHE_FLASH_ATTR  stringContainsNumber(const String &subConnections,
 
 //***********************************************************************
 // Search for a connection to a given nodeID
-std::shared_ptr<MeshConnection> ICACHE_FLASH_ATTR painlessMesh::findConnection(uint32_t nodeId) {
+std::shared_ptr<MeshConnection> ICACHE_FLASH_ATTR painlessMesh::findConnection(uint32_t nodeId, uint32_t exclude) {
     debugMsg(GENERAL, "In findConnection(nodeId)\n");
 
     for (auto &&connection : _connections) {
+        if (connection->nodeId == exclude) {
+            debugMsg(GENERAL, "findConnection(%u): Skipping excluded connection\n", nodeId);
+            continue;
+        }
 
         if (connection->nodeId == nodeId) {  // check direct connections
             debugMsg(GENERAL, "findConnection(%u): Found Direct Connection\n", nodeId);
@@ -571,7 +578,7 @@ void ICACHE_FLASH_ATTR MeshConnection::handleMessage(String &buffer, uint32_t re
         } else {                                                    // pass it along
             String tempStr;
             root.printTo(tempStr);
-            auto conn = staticThis->findConnection((uint32_t)root["dest"]);
+            auto conn = staticThis->findConnection((uint32_t)root["dest"], this->nodeId);
             if (conn) {
                 conn->addMessage(tempStr);
                 staticThis->debugMsg(COMMUNICATION, "meshRecvCb(): Message %s to %u forwarded through %u\n", tempStr.c_str(), (uint32_t)root["dest"], conn->nodeId);

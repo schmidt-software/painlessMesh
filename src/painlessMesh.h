@@ -151,7 +151,7 @@ protected:
                             uint32_t exclude = 0);
     size_t              approxNoNodes(); // estimate of numbers of node
     size_t              approxNoNodes(String &subConns); // estimate of numbers of node
-    shared_ptr<MeshConnection> findConnection(uint32_t nodeId);
+    shared_ptr<MeshConnection> findConnection(uint32_t nodeId, uint32_t exclude = 0);
     shared_ptr<MeshConnection> findConnection(AsyncClient *conn);
 
     // in painlessMeshAP.cpp
