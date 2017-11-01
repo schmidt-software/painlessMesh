@@ -51,8 +51,7 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
     tcpip_adapter_ip_info_t ipconfig;
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ipconfig);
 
-    if (_station_got_ip && 
-            ipconfig.ip.addr != 0) {
+    if (_station_got_ip && ipconfig.ip.addr != 0) {
         AsyncClient *pConn = new AsyncClient();
 
         pConn->onError([](void *, AsyncClient * client, int8_t err) {
@@ -67,14 +66,6 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
             //ip = stationScan.manualIP;
             memcpy(&ip, &stationScan.manualIP, 4);
 
-/*
-#ifdef ESP32
-        ip_addr_t ip_tmp;
-        ip_tmp.u_addr.ip4 = ip;
-#else
-        auto ip_tmp = ip;
-#endif
-*/
         pConn->onConnect([](void *, AsyncClient *client) {
                     staticThis->debugMsg(CONNECTION, "New STA connection incoming\n");
                     auto conn = std::make_shared<MeshConnection>(client, staticThis, true);
@@ -86,6 +77,7 @@ void ICACHE_FLASH_ATTR painlessMesh::tcpConnect(void) {
         debugMsg(ERROR, "tcpConnect(): err Something un expected in tcpConnect()\n");
     }
 }
+
 //***********************************************************************
 // Calculate NodeID from a hardware MAC address
 uint32_t ICACHE_FLASH_ATTR painlessMesh::encodeNodeId(uint8_t *hwaddr) {
