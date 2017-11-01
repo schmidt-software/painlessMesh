@@ -132,7 +132,7 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(AsyncClient *client_ptr, painle
     client->onError([](void * arg, AsyncClient *client, int8_t err) {
         staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection %s\n", client->errorToString(err));
     }, arg);
- 
+
     client->onDisconnect([](void *arg, AsyncClient *client) {
         if (arg == NULL) {
             staticThis->debugMsg(CONNECTION, "onDisconnect(): MeshConnection NULL\n");
@@ -247,6 +247,9 @@ void ICACHE_FLASH_ATTR MeshConnection::close() {
 
 
 bool ICACHE_FLASH_ATTR MeshConnection::addMessage(String &message, bool priority) {
+    mesh->debugMsg(DEBUG, "No connections: %u, sentMessages: %u, receiveMessages: %u, station: %u, canSend: %u, nodeId: %u\n",
+            mesh->_connections.size(), sentBuffer.jsonStrings.size(), receiveBuffer.jsonStrings.size(), station, client->canSend(), nodeId);
+    // Station 1 and 2751720597
     if (ESP.getFreeHeap() - message.length() >= MIN_FREE_MEMORY) { // If memory heap is enough, queue the message
         if (priority) {
             sentBuffer.push(message, priority);
@@ -257,18 +260,18 @@ bool ICACHE_FLASH_ATTR MeshConnection::addMessage(String &message, bool priority
                 staticThis->debugMsg(COMMUNICATION, "addMessage(): Package sent to queue end -> %d , FreeMem: %d\n", sentBuffer.jsonStrings.size(), ESP.getFreeHeap());
             } else {
                 staticThis->debugMsg(ERROR, "addMessage(): Message queue full -> %d , FreeMem: %d\n", sentBuffer.jsonStrings.size(), ESP.getFreeHeap());
-                if (sendReady)
+                if (client->canSend())
                     writeNext();
                 return false;
             }
         }
-        if (sendReady)
+        if (client->canSend())
             writeNext();
         return true;
     } else {
         //connection->sendQueue.clear(); // Discard all messages if free memory is low
         staticThis->debugMsg(DEBUG, "addMessage(): Memory low, message was discarded\n");
-        if (sendReady)
+        if (client->canSend())
             writeNext();
         return false;
     }
@@ -293,16 +296,13 @@ bool ICACHE_FLASH_ATTR MeshConnection::writeNext() {
             writeNext();
             return true;
         } else if (written == 0) {
-            sendReady = false;
             staticThis->debugMsg(COMMUNICATION, "writeNext(): tcp_write Failed node=%u. Resending later\n", nodeId);
             return false;
         } else {
-            sendReady = false;
             staticThis->debugMsg(ERROR, "writeNext(): Less written than requested. Please report bug on the issue tracker\n");
             return false;
         }
     } else {
-        sendReady = false;
         staticThis->debugMsg(COMMUNICATION, "writeNext(): tcp_sndbuf not enough space\n");
         return false;
     }
@@ -509,7 +509,6 @@ void ICACHE_FLASH_ATTR tcpSentCb(void * arg, AsyncClient * client, size_t len, u
         staticThis->debugMsg(COMMUNICATION, "tcpSentCb(): no valid connection found\n");
     }
     auto conn = static_cast<MeshConnection*>(arg);
-    conn->sendReady = true;
     conn->writeNext();
 }
 

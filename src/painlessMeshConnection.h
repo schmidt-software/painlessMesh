@@ -72,7 +72,6 @@ class MeshConnection {
 
         bool                addMessage(String &message, bool priority = false);
         bool                writeNext();
-        bool                sendReady = true;
         ReceiveBuffer       receiveBuffer;
         SentBuffer          sentBuffer;
 

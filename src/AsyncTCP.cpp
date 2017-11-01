@@ -1075,9 +1075,14 @@ void AsyncServer::begin(){
         return;
     }
 
-    static uint8_t backlog = 5;
-    _pcb = _tcp_listen_with_backlog(_pcb, backlog);
-    //_pcb = _tcp_listen(_pcb);
+    //static uint8_t backlog = 5;
+    //_pcb = _tcp_listen_with_backlog(_pcb, backlog);
+#ifdef ESP32
+    _pcb = _tcp_listen(_pcb);
+#else
+    _pcb = tcp_listen(_pcb);
+#endif
+
     if (!_pcb) {
         log_e("listen_pcb == NULL");
         return;
