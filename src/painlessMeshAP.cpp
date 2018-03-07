@@ -10,14 +10,21 @@
 
 #include "painlessMesh.h"
 
+extern "C"{
+#include "lwip/init.h" 
+}
+
 extern painlessMesh* staticThis;
 
 // AP functions
 //***********************************************************************
 void ICACHE_FLASH_ATTR painlessMesh::apInit(void) {
     //    String password( MESH_PASSWORD );
-
-    ip4_addr_t ip, netmask;
+#if LWIP_VERSION_MAJOR == 1
+    ip4_addr ip, netmask;
+#else
+    ip_addr ip, netmask;
+#endif
     IP4_ADDR(&ip, 10, (_nodeId & 0xFF00) >> 8, (_nodeId & 0xFF), 1);
     IP4_ADDR(&netmask, 255, 255, 255, 0);
 
