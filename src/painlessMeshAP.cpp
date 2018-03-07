@@ -20,9 +20,9 @@ void ICACHE_FLASH_ATTR painlessMesh::apInit(void) {
     IPAddress netmask(255,255,255,0);
 
     tcpip_adapter_ip_info_t ipInfo;
-	ipInfo.ip.addr = static_cast<uint32_t>(ip);
+    ipInfo.ip.addr = static_cast<uint32_t>(ip);
     ipInfo.gw.addr = static_cast<uint32_t>(ip);
-	ipInfo.netmask.addr = static_cast<uint32_t>(netmask);
+    ipInfo.netmask.addr = static_cast<uint32_t>(netmask);
     if (tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo) != ESP_OK) {
         debugMsg(ERROR, "tcpip_adapter_set_ip_info() failed\n");
     }
