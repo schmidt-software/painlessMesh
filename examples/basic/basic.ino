@@ -1,8 +1,8 @@
 //************************************************************
 // this is a simple example that uses the painlessMesh library
 //
-// 1. sends a silly message to every node on the mesh at a random time betweew 1 and 5 seconds
-// 2. prints anything it recieves to Serial.print
+// 1. sends a silly message to every node on the mesh at a random time between 1 and 5 seconds
+// 2. prints anything it receives to Serial.print
 //
 //
 //************************************************************
@@ -14,8 +14,10 @@
 
 void sendMessage() ; // Prototype so PlatformIO doesn't complain
 
-painlessMesh  mesh;
-Task taskSendMessage( TASK_SECOND * 1 , TASK_FOREVER, &sendMessage );
+Scheduler userScheduler;
+painlessMesh  mesh(&userScheduler);
+
+Task taskSendMessage(TASK_SECOND, TASK_FOREVER, &sendMessage);
 
 void receivedCallback( uint32_t from, String &msg ) {
   Serial.printf("startHere: Received from %u msg=%s\n", from, msg.c_str());
@@ -45,12 +47,12 @@ void setup() {
   mesh.onChangedConnections(&changedConnectionCallback);
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
 
-  mesh.scheduler.addTask( taskSendMessage );
-  taskSendMessage.enable() ;
+  userScheduler.addTask(taskSendMessage);
+  taskSendMessage.enable();
 }
 
 void loop() {
-  mesh.update();
+  userScheduler.execute();
 }
 
 void sendMessage() {

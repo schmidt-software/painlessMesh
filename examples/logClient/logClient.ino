@@ -12,7 +12,8 @@
 // Prototype
 void receivedCallback( uint32_t from, String &msg );
 
-painlessMesh  mesh;
+Scheduler userScheduler;
+painlessMesh  mesh(&userScheduler);
 
 size_t logServerId = 0;
 
@@ -44,12 +45,12 @@ void setup() {
   mesh.onReceive(&receivedCallback);
 
   // Add the task to the mesh scheduler
-  mesh.scheduler.addTask(myLoggingTask);
+  userScheduler.addTask(myLoggingTask);
   myLoggingTask.enable();
 }
 
 void loop() {
-  mesh.update();
+    userScheduler.execute();
 }
 
 void receivedCallback( uint32_t from, String &msg ) {

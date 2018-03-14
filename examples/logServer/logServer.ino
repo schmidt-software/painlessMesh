@@ -13,7 +13,8 @@
 // Prototype
 void receivedCallback( uint32_t from, String &msg );
 
-painlessMesh  mesh;
+Scheduler userScheduler;
+painlessMesh  mesh(&userScheduler);
 
 // Send my ID every 10 seconds to inform others
 Task logServerTask(10000, TASK_FOREVER, []() {
@@ -50,12 +51,12 @@ void setup() {
   });
 
   // Add the task to the mesh scheduler
-  mesh.scheduler.addTask(logServerTask);
+  userScheduler.addTask(logServerTask);
   logServerTask.enable();
 }
 
 void loop() {
-  mesh.update();
+  userScheduler.execute();
 }
 
 void receivedCallback( uint32_t from, String &msg ) {

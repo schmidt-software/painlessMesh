@@ -29,7 +29,8 @@ void changedConnectionCallback();
 void nodeTimeAdjustedCallback(int32_t offset); 
 void delayReceivedCallback(uint32_t from, int32_t delay);
 
-painlessMesh  mesh;
+Scheduler userScheduler;
+painlessMesh  mesh(&userScheduler);
 bool calc_delay = false;
 SimpleList<uint32_t> nodes;
 
@@ -56,8 +57,8 @@ void setup() {
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
   mesh.onNodeDelayReceived(&delayReceivedCallback);
 
-  mesh.scheduler.addTask( taskSendMessage );
-  taskSendMessage.enable() ;
+  userScheduler.addTask(taskSendMessage);
+  taskSendMessage.enable();
 
   blinkNoNodes.set(BLINK_PERIOD, (mesh.getNodeList().size() + 1) * 2, []() {
       // If on, switch off, else switch on
@@ -77,14 +78,14 @@ void setup() {
             (mesh.getNodeTime() % (BLINK_PERIOD*1000))/1000);
       }
   });
-  mesh.scheduler.addTask(blinkNoNodes);
+  userScheduler.addTask(blinkNoNodes);
   blinkNoNodes.enable();
 
   randomSeed(analogRead(A0));
 }
 
 void loop() {
-  mesh.update();
+  userScheduler.execute();
   digitalWrite(LED, !onFlag);
 
 }

@@ -1,6 +1,7 @@
 #ifndef   _EASY_MESH_H_
 #define   _EASY_MESH_H_
 
+#define _TASK_PRIORITY // Support for layered scheduling priority
 #define _TASK_STD_FUNCTION
 
 #include <Arduino.h>
@@ -67,6 +68,7 @@ typedef std::function<void(uint32_t nodeId, int32_t delay)> nodeDelayCallback_t;
 
 class painlessMesh {
 public:
+    painlessMesh(Scheduler *_userScheduler = NULL);
     //inline functions
     uint32_t            getNodeId(void) { return _nodeId; };
 
@@ -112,7 +114,6 @@ public:
     bool setHostname(const char * hostname);
     ip_addr getStationIP();
 
-    Scheduler scheduler;
     StationScan stationScan;
 
     // Rough estimate of the mesh stability (goes from 0-1000)
@@ -129,7 +130,6 @@ protected:
 
     String              buildMeshPackage(uint32_t destId, uint32_t fromId, meshPackageType type, String &msg);
 
-
     // in painlessMeshSync.cpp
     //must be accessable from callback
     void                handleNodeSync(std::shared_ptr<MeshConnection> conn, JsonObject& root);
@@ -141,14 +141,12 @@ protected:
     // in painlessMeshConnection.cpp
     //void                cleanDeadConnections(void); // Not implemented. Needed?
     void                tcpConnect(void);
-    bool closeConnectionSTA(); 
+    bool                closeConnectionSTA(); 
 
     void                eraseClosedConnections();
 
     String              subConnectionJson(std::shared_ptr<MeshConnection> exclude);
-    String              subConnectionJsonHelper(
-                            ConnectionList &connections,
-                            uint32_t exclude = 0);
+    String              subConnectionJsonHelper(ConnectionList &connections, uint32_t exclude = 0);
     size_t              approxNoNodes(); // estimate of numbers of node
     size_t              approxNoNodes(String &subConns); // estimate of numbers of node
     shared_ptr<MeshConnection> findConnection(uint32_t nodeId, uint32_t exclude = 0);
@@ -172,6 +170,8 @@ protected:
     nodeDelayCallback_t             nodeDelayReceivedCallback;
 
     // variables
+    Scheduler   scheduler;
+
     uint32_t    _nodeId;
     String      _meshSSID;
     String      _meshPassword;
@@ -185,7 +185,9 @@ protected:
 
     TCPServer  *_tcpListener;
 
-    bool         _station_got_ip = false;
+    bool        _station_got_ip = false;
+
+    bool        isExternalScheduler = false;
 
     Task droppedConnectionTask;
     Task newConnectionTask;
