@@ -3,12 +3,12 @@
 
 #define _TASK_STD_FUNCTION
 
-#include <painlessScheduler.h>
 #include <Arduino.h>
 #include <list>
 #include <ArduinoJson.h>
 #include <functional>
 #include <memory>
+#include <TaskSchedulerDeclarations.h>
 using namespace std;
 #include "espInterface.h"
 #include "painlessTCP.h"
@@ -110,7 +110,7 @@ public:
     void stationManual(String ssid, String password, uint16_t port = 0,
         uint8_t * remote_ip = NULL);
     bool setHostname(const char * hostname);
-    ip4_addr_t getStationIP();
+    ip_addr getStationIP();
 
     Scheduler scheduler;
     StationScan stationScan;

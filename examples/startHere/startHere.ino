@@ -93,7 +93,6 @@ void sendMessage() {
   String msg = "Hello from node ";
   msg += mesh.getNodeId();
   msg += " myFreeMemory: " + String(ESP.getFreeHeap());
-  msg += " noTasks: " + String(mesh.scheduler.size());
   mesh.sendBroadcast(msg);
 
   if (calc_delay) {
