@@ -61,6 +61,9 @@ void ICACHE_FLASH_ATTR painlessMesh::debugMsg(debugType_t type, const char* form
                 case GENERAL:
                     Serial.print("GENERAL: ");
                     break;
+                case MSG_TYPES:
+                    Serial.print("MSG_TYPES: ");
+                    break;
                 case REMOTE:
                     Serial.print("REMOTE: ");
                     break;
