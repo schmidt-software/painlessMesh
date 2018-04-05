@@ -120,7 +120,7 @@ public:
     /// Connect (as a station) to a specified network and ip
     /// You can pass {0,0,0,0} as IP to have it connect to the gateway
     void stationManual(String ssid, String password, uint16_t port = 0,
-        IPAddress remote_ip = (0,0,0,0));
+        IPAddress remote_ip = IPAddress(0,0,0,0));
     bool setHostname(const char * hostname);
     IPAddress getStationIP();
 
