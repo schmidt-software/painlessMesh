@@ -56,21 +56,16 @@ typedef enum {
 } wifi_storage_t;
 
 typedef enum {
-    TCPIP_ADAPTER_IF_STA = STATION_IF,
-    TCPIP_ADAPTER_IF_AP = SOFTAP_IF
-} tcpip_adapter_if_t;
-
-typedef enum {
     ESP_IF_WIFI_STA = STATION_IF,
-    ESP_IF_WIFI_AP = SOFTAP_IF
+    ESP_IF_WIFI_AP  = SOFTAP_IF
 } wifi_interface_t;
 
-typedef softap_config wifi_ap_config_t;
+typedef softap_config  wifi_ap_config_t;
 typedef station_config wifi_sta_config_t;
 
 typedef union {
-    wifi_ap_config_t ap;   /**< configuration of AP */
-    wifi_sta_config_t sta; /**< configuration of STA */
+    wifi_ap_config_t  ap;   /**< configuration of AP  */
+    wifi_sta_config_t sta;  /**< configuration of STA */
 } wifi_config_t;
 
 typedef struct scan_config wifi_scan_config_t;

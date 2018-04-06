@@ -63,15 +63,16 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
         debugMsg(GENERAL, "WiFi.mode(WIFI_AP_STA) succeeded? %d\n", WiFi.mode(WIFI_AP_STA));
     }
 
-    _meshSSID = ssid;
+    _meshSSID     = ssid;
     _meshPassword = password;
-    _meshPort = port;
-    _meshChannel = channel;
+    _meshPort     = port;
+    _meshChannel  = channel;
     _meshAuthMode = authmode;
-    if (password == "")
+    _meshHidden   = hidden;
+    _meshMaxConn  = maxconn;
+    if (password == "") {
         _meshAuthMode = WIFI_AUTH_OPEN; //if no password ... set auth mode to open
-    _meshHidden = hidden;
-    _meshMaxConn = maxconn;
+    }
 
     uint8_t MAC[] = {0, 0, 0, 0, 0, 0};
     if (WiFi.softAPmacAddress(MAC) == 0) {
@@ -81,8 +82,9 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
 
     _apIp = IPAddress(0, 0, 0, 0);
 
-    if (connectMode == WIFI_AP || connectMode == WIFI_AP_STA)
+    if (connectMode == WIFI_AP || connectMode == WIFI_AP_STA) {
         apInit();       // setup AP
+    }
     if (connectMode == WIFI_STA || connectMode == WIFI_AP_STA) {
         stationScan.init(this, ssid, password, port);
         _scheduler.addTask(stationScan.task);
@@ -122,8 +124,7 @@ void ICACHE_FLASH_ATTR painlessMesh::stop() {
 //***********************************************************************
 // do nothing if user have other Scheduler, they have to run their scheduler in loop not this library
 void ICACHE_FLASH_ATTR painlessMesh::update(void) {
-    if (isExternalScheduler == false)
-    {
+    if (isExternalScheduler == false) {
         _scheduler.execute();
     }
     return;
