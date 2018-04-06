@@ -78,7 +78,6 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
     if (WiFi.softAPmacAddress(MAC) == 0) {
         debugMsg(ERROR, "init(): WiFi.softAPmacAddress(MAC) failed.\n");
     }
-    esp_wifi_start();
     _nodeId = encodeNodeId(MAC);
 
     _apIp = IPAddress(0, 0, 0, 0);
