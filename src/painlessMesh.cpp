@@ -39,12 +39,9 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
 
     if (esp_wifi_set_storage(WIFI_STORAGE_RAM) != ESP_OK)
         debugMsg(ERROR, "Unable to set storage to RAM only.\n");
-        
+
     debugMsg(STARTUP, "init(): %d\n", WiFi.setAutoConnect(false)); // Disable autoconnect
 
-    // Should check whether WIFI_AP etc.
-    esp_wifi_set_protocol(ESP_IF_WIFI_STA, phymode);
-    esp_wifi_set_protocol(ESP_IF_WIFI_AP, phymode);
 #ifdef ESP8266
     system_phy_set_max_tpw(maxtpw); //maximum value of RF Tx Power, unit : 0.25dBm, range [0,82]
 #endif
@@ -52,15 +49,8 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
     staticThis = this;  // provides a way for static callback methods to access "this" object;
 
     // start configuration
-    switch (connectMode) {
-    case WIFI_STA:
-        debugMsg(GENERAL, "WiFi.mode(WIFI_STA) succeeded? %d\n", WiFi.mode(WIFI_STA));
-        break;
-    case WIFI_AP:
-        debugMsg(GENERAL, "WiFi.mode(WIFI_AP) succeeded? %d\n", WiFi.mode(WIFI_AP));
-        break;
-    default:
-        debugMsg(GENERAL, "WiFi.mode(WIFI_AP_STA) succeeded? %d\n", WiFi.mode(WIFI_AP_STA));
+    if(!WiFi.mode(connectMode)) {
+        debugMsg(GENERAL, "WiFi.mode() false");
     }
 
     _meshSSID     = ssid;

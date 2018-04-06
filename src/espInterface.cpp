@@ -113,14 +113,5 @@ esp_err_t esp_wifi_set_storage(wifi_storage_t storage) {
     return ESP_OK;
 }
 
-esp_err_t ICACHE_FLASH_ATTR esp_wifi_set_protocol(wifi_interface_t ifx, uint8_t protocol_bitmap) {
-    // NOTE that esp8266 can't use a different mode for ap and station
-    if (ifx == ESP_IF_WIFI_STA || ifx == ESP_IF_WIFI_AP) {
-        if (WiFi.setPhyMode(static_cast<WiFiPhyMode_t>(protocol_bitmap)))
-            return ESP_OK;
-    }
-    return ESP_FAIL;
-}
-
 #elif defined(ESP32)
 #endif // ESP8266
