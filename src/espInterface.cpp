@@ -125,14 +125,6 @@ esp_err_t ICACHE_FLASH_ATTR tcpip_adapter_set_ip_info(tcpip_adapter_if_t tcpip_i
     return ESP_FAIL;
 }
 
-esp_err_t ICACHE_FLASH_ATTR tcpip_adapter_dhcps_stop(tcpip_adapter_if_t tcpip_if) {
-    if (tcpip_if == TCPIP_ADAPTER_IF_AP) {
-        if (wifi_softap_dhcps_stop())
-            return ESP_OK;
-    }
-    return ESP_FAIL;
-}
-
 esp_err_t ICACHE_FLASH_ATTR tcpip_adapter_set_hostname(tcpip_adapter_if_t tcpip_if,
                                                        const char *hostname) {
     // Currently only STA is supported

@@ -15,9 +15,9 @@ extern "C" {
 #define WIFI_AUTH_WPA_WPA2_PSK AUTH_WPA_WPA2_PSK
 #define WIFI_AUTH_MAX          AUTH_MAX
 
-#define WIFI_PROTOCOL_11B       PHY_MODE_11B
-#define WIFI_PROTOCOL_11G       PHY_MODE_11G
-#define WIFI_PROTOCOL_11N       PHY_MODE_11N
+#define WIFI_PROTOCOL_11B      PHY_MODE_11B
+#define WIFI_PROTOCOL_11G      PHY_MODE_11G
+#define WIFI_PROTOCOL_11N      PHY_MODE_11N
 
 #define ESP_OK          0
 #define ESP_FAIL        -1
@@ -67,7 +67,6 @@ typedef enum {
 } wifi_interface_t;
 
 esp_err_t esp_wifi_set_storage(wifi_storage_t storage);
-esp_err_t tcpip_adapter_dhcps_stop(tcpip_adapter_if_t tcpip_if);
 esp_err_t esp_wifi_set_protocol(wifi_interface_t ifx, uint8_t protocol_bitmap);
 
 typedef softap_config wifi_ap_config_t;
