@@ -29,10 +29,14 @@ void ICACHE_FLASH_ATTR painlessMesh::stationManual(
 }
 
 bool ICACHE_FLASH_ATTR painlessMesh::setHostname(const char * hostname){
+#ifdef ESP8266
+  return WiFi.hostname(hostname);
+#elif defined(ESP32)
   if(strlen(hostname) > 32) {
     return false;
   }
-  return (tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname) == ESP_OK);
+  return WiFi.setHostname(hostname);
+#endif // ESP8266
 }
 
 IPAddress ICACHE_FLASH_ATTR painlessMesh::getStationIP(){

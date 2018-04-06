@@ -92,9 +92,6 @@ esp_err_t esp_wifi_set_protocol(wifi_interface_t ifx, uint8_t protocol_bitmap);
 
 esp_err_t esp_event_loop_init(system_event_cb_t cb, void *ctx);
 
-esp_err_t tcpip_adapter_set_hostname(tcpip_adapter_if_t tcpip_if, const char *hostname);
-
-
 esp_err_t esp_wifi_scan_start(wifi_scan_config_t *config, bool block);
 
 /**
