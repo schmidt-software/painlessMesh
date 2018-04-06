@@ -48,7 +48,6 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
 #ifdef ESP8266
     system_phy_set_max_tpw(maxtpw); //maximum value of RF Tx Power, unit : 0.25dBm, range [0,82]
 #endif
-    esp_event_loop_init(espWifiEventCb, NULL);
 
     staticThis = this;  // provides a way for static callback methods to access "this" object;
 
@@ -89,8 +88,7 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
         _scheduler.addTask(stationScan.task);
     }
 
-    //debugMsg(STARTUP, "init(): tcp_max_con=%u, nodeId = %u\n", espconn_tcp_get_max_con(), _nodeId);
-
+    esp_event_loop_init(espWifiEventCb, NULL);
 
     _scheduler.enableAll();
 }
