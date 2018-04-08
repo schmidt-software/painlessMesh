@@ -122,10 +122,7 @@ void ICACHE_FLASH_ATTR StationScan::scanComplete() {
     staticThis->debugMsg(CONNECTION, "scanComplete():-- > Cleared old aps.\n");
 
     int8_t num = WiFi.scanComplete();
-    if(num == WIFI_SCAN_RUNNING || num == WIFI_SCAN_FAILED)
-    {
-        return;
-    }
+    if(num == WIFI_SCAN_RUNNING || num == WIFI_SCAN_FAILED) return;
 
     staticThis->debugMsg(CONNECTION, "scanComplete(): num = %d\n", num);
     
@@ -139,10 +136,12 @@ void ICACHE_FLASH_ATTR StationScan::scanComplete() {
 
 #ifdef ESP32
         WiFi.getNetworkInfo(i, _ssid, _authmode, _rssi, _bssid, _channel);
+        if(_ssid != mesh->_meshSSID) continue;
         record.primary = _channel;
 #elif defined(ESP8266)
         bool _is_hidden = false;
         WiFi.getNetworkInfo(i, _ssid, _authmode, _rssi, _bssid, _channel, _is_hidden);
+        if(_ssid != mesh->_meshSSID) continue;
         record.is_hidden = _is_hidden;
         record.channel = _channel;
 #endif // ESP32
@@ -196,7 +195,6 @@ void ICACHE_FLASH_ATTR StationScan::requestIP(wifi_ap_record_t &ap) {
 }
 
 void ICACHE_FLASH_ATTR StationScan::connectToAP() {
-    mesh->debugMsg(CONNECTION, "connectToAP():");
     // Next task will be to rescan
     task.setCallback([this]() {
         stationScan();

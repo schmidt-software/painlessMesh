@@ -642,9 +642,6 @@ void ICACHE_FLASH_ATTR painlessMesh::espWifiEventCb(WiFiEvent_t event) {
         case SYSTEM_EVENT_AP_STADISCONNECTED:
             staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_AP_STADISCONNECTED\n");
             break;
-        default:
-            staticThis->debugMsg(ERROR, "Unhandled WiFi event: %d\n", event);
-            break;
 #elif defined(ESP8266)
         case WIFI_EVENT_STAMODE_CONNECTED:
             staticThis->debugMsg(CONNECTION, "espWifiEventCb(): WIFI_EVENT_STAMODE_CONNECTED\n");
@@ -670,10 +667,10 @@ void ICACHE_FLASH_ATTR painlessMesh::espWifiEventCb(WiFiEvent_t event) {
         case WIFI_EVENT_SOFTAPMODE_STADISCONNECTED:
             staticThis->debugMsg(CONNECTION, "espWifiEventCb(): WIFI_EVENT_SOFTAPMODE_STADISCONNECTED\n");
             break;
+#endif //ESP32
         default:
             staticThis->debugMsg(ERROR, "Unhandled WiFi event: %d\n", event);
             break;
-#endif //ESP32
     }
     return;
 }
