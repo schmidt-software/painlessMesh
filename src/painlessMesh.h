@@ -178,7 +178,7 @@ protected:
 
     // callbacks
     // in painlessMeshConnection.cpp
-    static int          espWifiEventCb(void * ctx, system_event_t *event);
+    static void         espWifiEventCb(WiFiEvent_t event);
 
     // Callback functions
     newConnectionCallback_t         newConnectionCallback;

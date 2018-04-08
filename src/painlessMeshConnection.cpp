@@ -606,47 +606,74 @@ void ICACHE_FLASH_ATTR MeshConnection::handleMessage(String &buffer, uint32_t re
 
 //***********************************************************************
 // Wifi event handler
-int ICACHE_FLASH_ATTR painlessMesh::espWifiEventCb(void * ctx, system_event_t *event) {
-    switch (event->event_id) {
-    case SYSTEM_EVENT_SCAN_DONE:
-        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_SCAN_DONE\n");
-        // Call the same thing original callback called
-        staticThis->stationScan.scanComplete();
-        break;
-    case SYSTEM_EVENT_STA_START:
-        staticThis->stationScan.task.forceNextIteration();
-        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_START\n");
-        break;
-    case SYSTEM_EVENT_STA_CONNECTED:
-        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_CONNECTED\n");
-        break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-        staticThis->_station_got_ip = false;
-        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_DISCONNECTED\n");
-        //staticThis->closeConnectionSTA();
-        WiFi.disconnect();
-        staticThis->stationScan.connectToAP(); // Search for APs and connect to the best one
-        break;
-    case SYSTEM_EVENT_STA_AUTHMODE_CHANGE:
-        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_AUTHMODE_CHANGE\n");
-        break;
-    case SYSTEM_EVENT_STA_GOT_IP:
-        staticThis->_station_got_ip = true;
-        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_GOT_IP\n");
-        staticThis->tcpConnect(); // Connect to TCP port
-        break;
-
-    case SYSTEM_EVENT_AP_STACONNECTED:
-        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_AP_STACONNECTED\n");
-        break;
-
-    case SYSTEM_EVENT_AP_STADISCONNECTED:
-        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_AP_STADISCONNECTED\n");
-        break;
-
-    default:
-        staticThis->debugMsg(ERROR, "Unhandled WiFi event: %d\n", event->event_id);
-        break;
+void ICACHE_FLASH_ATTR painlessMesh::espWifiEventCb(WiFiEvent_t event) {
+    switch (event) {
+#ifdef ESP32
+        case SYSTEM_EVENT_SCAN_DONE:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_SCAN_DONE\n");
+            // Call the same thing original callback called
+            staticThis->stationScan.scanComplete();
+            break;
+        case SYSTEM_EVENT_STA_START:
+            staticThis->stationScan.task.forceNextIteration();
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_START\n");
+            break;
+        case SYSTEM_EVENT_STA_CONNECTED:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_CONNECTED\n");
+            break;
+        case SYSTEM_EVENT_STA_DISCONNECTED:
+            staticThis->_station_got_ip = false;
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_DISCONNECTED\n");
+            //staticThis->closeConnectionSTA();
+            WiFi.disconnect();
+            staticThis->stationScan.connectToAP(); // Search for APs and connect to the best one
+            break;
+        case SYSTEM_EVENT_STA_AUTHMODE_CHANGE:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_AUTHMODE_CHANGE\n");
+            break;
+        case SYSTEM_EVENT_STA_GOT_IP:
+            staticThis->_station_got_ip = true;
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_GOT_IP\n");
+            staticThis->tcpConnect(); // Connect to TCP port
+            break;
+        case SYSTEM_EVENT_AP_STACONNECTED:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_AP_STACONNECTED\n");
+            break;
+        case SYSTEM_EVENT_AP_STADISCONNECTED:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_AP_STADISCONNECTED\n");
+            break;
+        default:
+            staticThis->debugMsg(ERROR, "Unhandled WiFi event: %d\n", event);
+            break;
+#elif defined(ESP8266)
+        case WIFI_EVENT_STAMODE_CONNECTED:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): WIFI_EVENT_STAMODE_CONNECTED\n");
+            break;
+        case WIFI_EVENT_STAMODE_DISCONNECTED:
+            staticThis->_station_got_ip = false;
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): WIFI_EVENT_STAMODE_DISCONNECTED\n");
+            //staticThis->closeConnectionSTA();
+            WiFi.disconnect();
+            staticThis->stationScan.connectToAP(); // Search for APs and connect to the best one
+            break;
+        case WIFI_EVENT_STAMODE_AUTHMODE_CHANGE:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): WIFI_EVENT_STAMODE_AUTHMODE_CHANGE\n");
+            break;
+        case WIFI_EVENT_STAMODE_GOT_IP:
+            staticThis->_station_got_ip = true;
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): WIFI_EVENT_STAMODE_GOT_IP\n");
+            staticThis->tcpConnect(); // Connect to TCP port
+            break;
+        case WIFI_EVENT_SOFTAPMODE_STACONNECTED:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): WIFI_EVENT_SOFTAPMODE_STACONNECTED\n");
+            break;
+        case WIFI_EVENT_SOFTAPMODE_STADISCONNECTED:
+            staticThis->debugMsg(CONNECTION, "espWifiEventCb(): WIFI_EVENT_SOFTAPMODE_STADISCONNECTED\n");
+            break;
+        default:
+            staticThis->debugMsg(ERROR, "Unhandled WiFi event: %d\n", event);
+            break;
+#endif //ESP32
     }
-    return ESP_OK;
+    return;
 }
