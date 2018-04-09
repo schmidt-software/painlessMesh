@@ -71,8 +71,8 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
         _scheduler.addTask(stationScan.task);
     }
 
-    WiFi.onEvent(espWifiEventCb);
-
+    eventHandleInit();
+    
     _scheduler.enableAll();
 }
 
