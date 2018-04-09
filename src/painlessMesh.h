@@ -180,7 +180,7 @@ protected:
     // in painlessMeshConnection.cpp
     void                eventHandleInit();
 #ifdef ESP32
-    void                espWiFiEventCb(WiFiEvent_t event);
+    static void         espWiFiEventCb(WiFiEvent_t event);
 #endif // ESP32
 
     // Callback functions
