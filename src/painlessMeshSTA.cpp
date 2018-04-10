@@ -136,12 +136,12 @@ void ICACHE_FLASH_ATTR StationScan::scanComplete() {
 
 #ifdef ESP32
         WiFi.getNetworkInfo(i, _ssid, _authmode, _rssi, _bssid, _channel);
-        if(_ssid != mesh->_meshSSID) continue;
+        if(_ssid != ssid) continue;
         record.primary = _channel;
 #elif defined(ESP8266)
         bool _is_hidden = false;
         WiFi.getNetworkInfo(i, _ssid, _authmode, _rssi, _bssid, _channel, _is_hidden);
-        if(_ssid != mesh->_meshSSID) continue;
+        if(_ssid != ssid) continue;
         record.is_hidden = _is_hidden;
         record.channel = _channel;
 #endif // ESP32
@@ -190,7 +190,7 @@ void ICACHE_FLASH_ATTR StationScan::filterAPs() {
 void ICACHE_FLASH_ATTR StationScan::requestIP(wifi_ap_record_t &ap) {
     mesh->debugMsg(CONNECTION, "connectToAP(): Best AP is %u<---\n", 
             mesh->encodeNodeId(ap.bssid));
-    WiFi.begin((char*)ap.ssid, password.c_str(), mesh->_meshChannel, ap.bssid);
+    WiFi.begin((char*)ap.ssid, password.c_str());
     return;
 }
 
