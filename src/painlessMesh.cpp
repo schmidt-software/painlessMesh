@@ -16,15 +16,15 @@ ICACHE_FLASH_ATTR painlessMesh::painlessMesh() {}
 
 // general functions
 //***********************************************************************
-void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, Scheduler *baseScheduler, uint16_t port, WiFiMode_t connectMode, wifi_auth_mode_t authmode, uint8_t channel, uint8_t phymode, uint8_t maxtpw, uint8_t hidden, uint8_t maxconn) {
+void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, Scheduler *baseScheduler, uint16_t port, WiFiMode_t connectMode, uint8_t channel, uint8_t phymode, uint8_t maxtpw, uint8_t hidden, uint8_t maxconn) {
 
     baseScheduler->setHighPriorityScheduler(&this->_scheduler);
     isExternalScheduler = true;
 
-    init(ssid, password, port, connectMode, authmode, channel, phymode, maxtpw, hidden, maxconn);
+    init(ssid, password, port, connectMode, channel, phymode, maxtpw, hidden, maxconn);
 }
 
-void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t port, WiFiMode_t connectMode, wifi_auth_mode_t authmode, uint8_t channel, uint8_t phymode, uint8_t maxtpw, uint8_t hidden, uint8_t maxconn) {
+void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t port, WiFiMode_t connectMode, uint8_t channel, uint8_t phymode, uint8_t maxtpw, uint8_t hidden, uint8_t maxconn) {
     // shut everything down, start with a blank slate.
 
     randomSeed(analogRead(A0)); // Init random generator seed to generate delay variance
@@ -48,12 +48,8 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
     _meshPassword = password;
     _meshPort     = port;
     _meshChannel  = channel;
-    _meshAuthMode = authmode;
     _meshHidden   = hidden;
     _meshMaxConn  = maxconn;
-    if (password == "") {
-        _meshAuthMode = WIFI_AUTH_OPEN; //if no password ... set auth mode to open
-    }
 
     uint8_t MAC[] = {0, 0, 0, 0, 0, 0};
     if (WiFi.softAPmacAddress(MAC) == 0) {

@@ -8,19 +8,9 @@ extern "C" {
     #include "user_interface.h"
 }
 
-#define WIFI_AUTH_OPEN         AUTH_OPEN
-#define WIFI_AUTH_WEP          AUTH_WEP
-#define WIFI_AUTH_WPA_PSK      AUTH_WPA_PSK
-#define WIFI_AUTH_WPA2_PSK     AUTH_WPA2_PSK
-#define WIFI_AUTH_WPA_WPA2_PSK AUTH_WPA_WPA2_PSK
-#define WIFI_AUTH_MAX          AUTH_MAX
-
 #define WIFI_PROTOCOL_11B      PHY_MODE_11B
 #define WIFI_PROTOCOL_11G      PHY_MODE_11G
 #define WIFI_PROTOCOL_11N      PHY_MODE_11N
-
-typedef AUTH_MODE wifi_auth_mode_t;
-typedef struct bss_info wifi_ap_record_t;
 
 #elif defined(ESP32)
 #include <WiFi.h>

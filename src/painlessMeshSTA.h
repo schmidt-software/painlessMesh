@@ -11,6 +11,13 @@
 
 #define SCAN_INTERVAL       10*TASK_SECOND // AP scan period in ms
 
+typedef struct
+{
+  uint8_t bssid[6];
+  uint8_t ssid[33];
+  int8_t  rssi;
+} WiFi_AP_Record_t;
+
 class painlessMesh;
 
 class StationScan {
@@ -30,9 +37,9 @@ class StationScan {
     String                      password;
     painlessMesh                *mesh;
     uint16_t                    port;
-    std::list<wifi_ap_record_t> aps;
+    std::list<WiFi_AP_Record_t> aps;
 
-    void requestIP(wifi_ap_record_t &ap);
+    void requestIP(WiFi_AP_Record_t &ap);
 
     // Manually configure network and ip
     bool      manual   = false;
