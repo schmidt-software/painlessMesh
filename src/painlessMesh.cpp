@@ -8,7 +8,6 @@
 #include "lwip/init.h"
 
 painlessMesh* staticThis;
-uint16_t  count = 0;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 ICACHE_FLASH_ATTR painlessMesh::painlessMesh() {}
@@ -16,15 +15,15 @@ ICACHE_FLASH_ATTR painlessMesh::painlessMesh() {}
 
 // general functions
 //***********************************************************************
-void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, Scheduler *baseScheduler, uint16_t port, WiFiMode_t connectMode, uint8_t channel, uint8_t maxtpw, uint8_t hidden, uint8_t maxconn) {
+void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, Scheduler *baseScheduler, uint16_t port, WiFiMode_t connectMode, uint8_t channel, uint8_t hidden, uint8_t maxconn) {
 
     baseScheduler->setHighPriorityScheduler(&this->_scheduler);
     isExternalScheduler = true;
 
-    init(ssid, password, port, connectMode, channel, maxtpw, hidden, maxconn);
+    init(ssid, password, port, connectMode, channel, hidden, maxconn);
 }
 
-void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t port, WiFiMode_t connectMode, uint8_t channel, uint8_t maxtpw, uint8_t hidden, uint8_t maxconn) {
+void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t port, WiFiMode_t connectMode, uint8_t channel, uint8_t hidden, uint8_t maxconn) {
     // shut everything down, start with a blank slate.
 
     randomSeed(analogRead(A0)); // Init random generator seed to generate delay variance
@@ -32,10 +31,6 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
     WiFi.disconnect(true);
 
     debugMsg(STARTUP, "init(): %d\n", WiFi.setAutoConnect(false)); // Disable autoconnect
-
-#ifdef ESP8266
-    system_phy_set_max_tpw(maxtpw); //maximum value of RF Tx Power, unit : 0.25dBm, range [0,82]
-#endif
 
     staticThis = this;  // provides a way for static callback methods to access "this" object;
 
@@ -132,6 +127,5 @@ bool ICACHE_FLASH_ATTR painlessMesh::startDelayMeas(uint32_t nodeId) {
     }
     debugMsg(S_TIME, "startDelayMeas(): Sent delay calc request -> %s\n", timeStamp.c_str());
     sendMessage(conn, nodeId, _nodeId, TIME_DELAY, timeStamp);
-    //conn->timeSyncLastRequested = system_get_time();
     return true;
 }

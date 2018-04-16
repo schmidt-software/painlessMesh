@@ -4,9 +4,6 @@
 #ifdef ESP8266
 
 #include <ESP8266WiFi.h>
-extern "C" {
-    #include "user_interface.h"
-}
 
 #elif defined(ESP32)
 #include <WiFi.h>
