@@ -54,10 +54,10 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
 
     _apIp = IPAddress(0, 0, 0, 0);
 
-    if (connectMode == WIFI_AP || connectMode == WIFI_AP_STA) {
+    if (connectMode & WIFI_AP) {
         apInit();       // setup AP
     }
-    if (connectMode == WIFI_STA || connectMode == WIFI_AP_STA) {
+    if (connectMode & WIFI_STA) {
         stationScan.init(this, ssid, password, port);
         _scheduler.addTask(stationScan.task);
     }
