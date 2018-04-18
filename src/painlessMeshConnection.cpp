@@ -470,8 +470,16 @@ String ICACHE_FLASH_ATTR painlessMesh::subConnectionJsonHelper(
         } else if (sub->nodeId != exclude && sub->nodeId != 0) {  //exclude connection that we are working with & anything too new.
             if (ret.length() > 1)
                 ret += String(",");
-            ret += String("{\"nodeId\":") + String(sub->nodeId) +
-                String(",\"subs\":") + sub->subConnections + String("}");
+            ret += String("{\"nodeId\":") + String(sub->nodeId) + String(",\"subs\":");
+            if (sub->subConnections.length() > 0)
+            {
+                ret += sub->subConnections;
+            }
+            else
+            {
+                ret += String("[]");
+            }
+            ret += String("}");
         }
     }
     ret += String("]");
