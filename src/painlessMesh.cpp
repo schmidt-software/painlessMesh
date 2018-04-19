@@ -68,6 +68,19 @@ void ICACHE_FLASH_ATTR painlessMesh::init(String ssid, String password, uint16_t
 }
 
 void ICACHE_FLASH_ATTR painlessMesh::stop() {
+
+    // remove all events
+#ifdef ESP32
+    WiFi.removeEvent(espWiFiEventCb);
+#elif defined(ESP8266)
+    eventSTAConnectedHandler       = WiFiEventHandler();
+    eventSTADisconnectedHandler    = WiFiEventHandler();
+    eventSTAAuthChangeHandler      = WiFiEventHandler();
+    eventSTAGotIPHandler           = WiFiEventHandler();
+    eventSoftAPConnectedHandler    = WiFiEventHandler();
+    eventSoftAPDisconnectedHandler = WiFiEventHandler();
+#endif // ESP32
+
     // Close all connections
     while (_connections.size() > 0) {
         auto connection = _connections.begin();
