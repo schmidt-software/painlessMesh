@@ -20,7 +20,15 @@ void ICACHE_FLASH_ATTR painlessMesh::apInit(void) {
     IPAddress netmask(255,255,255,0);
 
     WiFi.softAPConfig(_apIp, _apIp, netmask);
+#if ESP_SDK_VERSION_MAJOR == 2 
+#if ESP_SDK_VERSION_MINOR <= 3
+    WiFi.softAP(_meshSSID.c_str(), _meshPassword.c_str(), _meshChannel, _meshHidden);
+#else
     WiFi.softAP(_meshSSID.c_str(), _meshPassword.c_str(), _meshChannel, _meshHidden, _meshMaxConn);
+#endif
+#else
+    WiFi.softAP(_meshSSID.c_str(), _meshPassword.c_str(), _meshChannel, _meshHidden, _meshMaxConn);
+#endif
 
     // establish AP tcpServers
     tcpServerInit();
