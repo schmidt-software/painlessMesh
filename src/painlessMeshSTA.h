@@ -35,6 +35,7 @@ class StationScan {
     void scanComplete();
     void filterAPs();
     void connectToAP();
+    std::list<WiFi_AP_Record_t> lastAPs; // Public member to allow for browsing of know APs
 
   private:
     String                      ssid;
