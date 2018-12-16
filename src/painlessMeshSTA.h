@@ -2,7 +2,6 @@
 #define   _PAINLESS_MESH_STA_H_
 
 #include <list>
-#include <time.h>
 
 #define _TASK_PRIORITY // Support for layered scheduling priority
 #define _TASK_STD_FUNCTION
