@@ -36,6 +36,7 @@ class StationScan {
     void filterAPs();
     void connectToAP();
     std::list<WiFi_AP_Record_t> lastAPs; // Public member to allow for browsing of know APs
+    unsigned long lastAPsTimestamp; // timestamp of the last time lastAPs was updated.
 
   private:
     String                      ssid;
