@@ -155,6 +155,10 @@ void ICACHE_FLASH_ATTR StationScan::scanComplete() {
     task.yield([this]() {
         // Task filter all unknown
         filterAPs();
+        
+        // Make a copy of the AP list for public use
+        lastAPs = aps;
+        lastAPsTimestamp = now();
 
         // Next task is to sort by strength
         task.yield([this] {
