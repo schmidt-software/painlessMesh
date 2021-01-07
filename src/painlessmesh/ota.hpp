@@ -281,7 +281,13 @@ void addSendPackageCallback(Scheduler& scheduler, plugin::PackageHandler<T>& mes
       char buffer[otaPartSize+1];
       memset(buffer, 0,otaPartSize+1);
       auto size = callback(pkg,buffer);
-      
+      // Handle zero size
+      if(!size){
+        // No data is available by the user app. 
+
+        // todo - doubtful, shall we return true or false. What is the purpose of this return value.  
+        return true;
+      }
       //Encode data as base64 so there are no null characters and can be shown in plaintext
       auto b64Data = painlessmesh::base64::encode((unsigned char * )buffer,size);
       auto reply =
