@@ -278,7 +278,8 @@ void addSendPackageCallback(Scheduler& scheduler, plugin::PackageHandler<T>& mes
     mesh.onPackage(11,[&mesh,callback,otaPartSize](painlessmesh::protocol::Variant variant){
       
       auto pkg = variant.to<painlessmesh::plugin::ota::DataRequest>();
-      char buffer[otaPartSize+1] = {0};
+      char buffer[otaPartSize+1];
+      memset(buffer, 0,otaPartSize+1);
       auto size = callback(pkg,buffer);
       
       //Encode data as base64 so there are no null characters and can be shown in plaintext
