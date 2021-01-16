@@ -312,12 +312,14 @@ void addReceivePackageCallback(Scheduler& scheduler, plugin::PackageHandler<T>& 
   auto updateFW = std::make_shared<State>();
   updateFW->role = role;
 #ifdef ESP32
-  LittleFS.begin(true);  // Start the SPI Flash Files System
+  SPIFFS.begin(true);  // Start the SPI Flash Files System
+  if (SPIFFS.exists(currentFW->ota_fn)) {
+  auto file = SPIFFS.open(currentFW->ota_fn, "r");
 #else
   LittleFS.begin();  // Start the SPI Flash Files System
-#endif
   if (LittleFS.exists(currentFW->ota_fn)) {
-    auto file = LittleFS.open(currentFW->ota_fn, "r");
+  auto file = LittleFS.open(currentFW->ota_fn, "r");
+#endif
     TSTRING msg = "";
     while (file.available()) {
       msg += (char)file.read();
@@ -405,7 +407,12 @@ void addReceivePackageCallback(Scheduler& scheduler, plugin::PackageHandler<T>& 
         //       check md5, reboot
         if (Update.end(true)) {  // true to set the size to the
                                  // current progress
+        #ifdef ESP32                   
+          auto file = SPIFFS.open(updateFW->ota_fn, "w");
+        #else
           auto file = LittleFS.open(updateFW->ota_fn, "w");
+        #endif
+
           String msg;
           auto var = protocol::Variant(updateFW.get());
           var.printTo(msg);
