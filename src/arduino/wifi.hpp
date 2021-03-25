@@ -231,7 +231,11 @@ class Mesh : public painlessmesh::Mesh<MeshConnection> {
   void init(uint32_t id) { painlessmesh::Mesh<MeshConnection>::init(id); }
 
   void apInit(uint32_t nodeId) {
-    _apIp = IPAddress(10, (nodeId & 0xFF00) >> 8, (nodeId & 0xFF), 1);
+#ifdef CONSTANTIP
+    _apIp = IPAddress(10, 0, 0, 1); //Constant IP 10.0.0.1 for each node
+#else
+	_apIp = IPAddress(10, (nodeId & 0xFF00) >> 8, (nodeId & 0xFF), 1);
+#endif
     IPAddress netmask(255, 255, 255, 0);
 
     WiFi.softAPConfig(_apIp, _apIp, netmask);
