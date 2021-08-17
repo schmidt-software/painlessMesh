@@ -151,12 +151,18 @@ void handleNodeSync(T& mesh, protocol::NodeTree newTree,
   if (conn->newConnection) {
     auto oldConnection = router::findRoute<U>(mesh, newTree.nodeId);
     if (oldConnection) {
+      //Log(logger::SYNC,
+      //    "handleNodeSync(): already connected to %u. Closing the new "
+      //    "connection \n",
+      //    conn->nodeId);
+      //conn->close();
+      //return;
+
       Log(logger::SYNC,
-          "handleNodeSync(): already connected to %u. Closing the new "
+          "handleNodeSync(): already connected to %u. Closing the old "
           "connection \n",
           conn->nodeId);
-      conn->close();
-      return;
+      oldConnection->close(); 
     }
 
     mesh.addTask([&mesh, remoteNodeId = newTree.nodeId]() {
