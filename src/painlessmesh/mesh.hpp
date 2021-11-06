@@ -478,24 +478,26 @@ class Connection : public painlessmesh::layout::Neighbour,
         station(station) {}
 
   void initTasks() {
-
+    auto self = this->shared_from_this();
+    auto mesh = this->mesh;
     this->onReceive(
-        [mesh = mesh, self = this->shared_from_this()](TSTRING str) {
+        [mesh, self](TSTRING str) {
           auto variant = painlessmesh::protocol::Variant(str);
           router::routePackage<painlessmesh::Connection>(
               (*self->mesh), self->shared_from_this(), str,
               self->mesh->callbackList, self->mesh->getNodeTime());
         });
 
-    this->onDisconnect([mesh = mesh, self = this->shared_from_this()]() {
+    this->onDisconnect([mesh, self]() {
       self->timeSyncTask.setCallback(NULL);
       self->timeSyncTask.disable();
       self->nodeSyncTask.setCallback(NULL);
       self->nodeSyncTask.disable();
       self->timeOutTask.setCallback(NULL);
       self->timeOutTask.disable();
-
-      mesh->addTask([mesh = mesh, nodeId = self->nodeId, station = self->station]() {
+      auto nodeId = self->nodeId;
+      auto station = self->station;
+      mesh->addTask([mesh, nodeId, station]() {
         mesh->changedConnectionCallbacks.execute(nodeId);
         mesh->droppedConnectionCallbacks.execute(nodeId, station);
       });
@@ -505,14 +507,14 @@ class Connection : public painlessmesh::layout::Neighbour,
     using namespace logger;
 
     timeOutTask.set(NODE_TIMEOUT, TASK_ONCE,
-                    [self = this->shared_from_this()]() {
+                    [self]() {
                       Log(CONNECTION, "Time out reached\n");
                       self->close();
                     });
     mesh->mScheduler->addTask(timeOutTask);
 
     this->nodeSyncTask.set(
-        TASK_MINUTE, TASK_FOREVER, [self = this->shared_from_this()]() {
+        TASK_MINUTE, TASK_FOREVER, [self]() {
           Log(SYNC, "nodeSyncTask(): request with %u\n", self->nodeId);
           router::send<protocol::NodeSyncRequest, Connection>(
               self->request(self->mesh->asNodeTree()), self);
