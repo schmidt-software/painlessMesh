@@ -65,7 +65,7 @@ void syncLayout(Layout<T>& layout, uint32_t changedId) {
   // TODO: this should be called from changed connections and dropped
   // connections events
   for (auto&& sub : layout.subs) {
-    if (sub->connected && !sub->newConnection && sub->nodeId != 0 &&
+    if (sub->connected() && !sub->newConnection && sub->nodeId != 0 &&
         sub->nodeId != changedId) {  // Exclude current
       sub->nodeSyncTask.forceNextIteration();
     }

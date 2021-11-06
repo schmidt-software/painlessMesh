@@ -21,7 +21,7 @@ endforeach()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
-add_executable(catch_tcp_integration test/boost/tcp_integration.cpp test/catch/fake_serial.cpp src/painlessMeshConnection.cpp src/scheduler.cpp)
+add_executable(catch_tcp_integration test/boost/tcp_integration.cpp test/catch/fake_serial.cpp src/scheduler.cpp)
 target_include_directories(catch_tcp_integration PUBLIC test/include/ test/boost/ test/ArduinoJson/src/ test/TaskScheduler/src/ src/)
 TARGET_LINK_LIBRARIES(catch_tcp_integration ${Boost_LIBRARIES})
 

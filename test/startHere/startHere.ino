@@ -54,7 +54,7 @@ void setup() {
   mesh.setDebugMsgTypes(ERROR | CONNECTION | DEBUG);  // set before init() so that you can see error messages
 
   mesh.init(MESH_SSID, MESH_PASSWORD, &userScheduler, MESH_PORT, WIFI_AP_STA, 6);
-  mesh.initOTA("otatest");
+  mesh.initOTAReceive("otatest");
 
   mesh.setContainsRoot(true);
   

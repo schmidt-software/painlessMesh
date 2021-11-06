@@ -3,6 +3,7 @@
 
 #include "painlessmesh/configuration.hpp"
 
+#include "painlessmesh/connection.hpp"
 #include "painlessmesh/ntp.hpp"
 #include "painlessmesh/plugin.hpp"
 #include "painlessmesh/tcp.hpp"
@@ -64,13 +65,15 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
   }
 
 #ifdef PAINLESSMESH_ENABLE_OTA
-  std::shared_ptr<Task> offerOTA(painlessmesh::plugin::ota::Announce announce){
-    auto announceTask = 
-            this->addTask(TASK_SECOND*60,60,[this, announce]() {this->sendPackage(&announce); });
+  std::shared_ptr<Task> offerOTA(painlessmesh::plugin::ota::Announce announce) {
+    auto announceTask = this->addTask(TASK_SECOND * 60, 60, [this, announce]() {
+      this->sendPackage(&announce);
+    });
     return announceTask;
   }
 
-  std::shared_ptr<Task>  offerOTA(TSTRING role, TSTRING hardware, TSTRING md5,size_t noPart, bool forced = false){
+  std::shared_ptr<Task> offerOTA(TSTRING role, TSTRING hardware, TSTRING md5,
+                                 size_t noPart, bool forced = false) {
     painlessmesh::plugin::ota::Announce announce;
     announce.md5 = md5;
     announce.role = role;
@@ -81,13 +84,15 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
     return offerOTA(announce);
   }
 
-  void initOTASend(painlessmesh::plugin::ota::otaDataPacketCallbackType_t callback,size_t otaPartSize) {
-    painlessmesh::plugin::ota::addSendPackageCallback(*this->mScheduler, (*this),
-                                                  callback,otaPartSize);
+  void initOTASend(
+      painlessmesh::plugin::ota::otaDataPacketCallbackType_t callback,
+      size_t otaPartSize) {
+    painlessmesh::plugin::ota::addSendPackageCallback(
+        *this->mScheduler, (*this), callback, otaPartSize);
   }
   void initOTAReceive(TSTRING role = "") {
-    painlessmesh::plugin::ota::addReceivePackageCallback(*this->mScheduler, (*this),
-                                                  role);
+    painlessmesh::plugin::ota::addReceivePackageCallback(*this->mScheduler,
+                                                         (*this), role);
   }
 #endif
 
@@ -394,7 +399,7 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
     using namespace logger;
     Log(CONNECTION, "eraseClosedConnections():\n");
     this->subs.remove_if(
-        [](const std::shared_ptr<T> &conn) { return !conn->connected; });
+        [](const std::shared_ptr<T> &conn) { return !conn->connected(); });
   }
 
   // Callback functions
@@ -453,6 +458,84 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
   friend void painlessmesh::tcp::initServer<T, Mesh>(AsyncServer &, Mesh &);
   friend void painlessmesh::tcp::connect<T, Mesh>(AsyncClient &, IPAddress,
                                                   uint16_t, Mesh &);
-};  // namespace painlessmesh
+};
+
+class Connection : public painlessmesh::layout::Neighbour,
+                   public painlessmesh::tcp::BufferedConnection {
+ public:
+  Mesh<Connection> *mesh;
+  bool station = true;
+  bool newConnection = true;
+
+  Task timeSyncTask;
+  Task nodeSyncTask;
+  Task timeOutTask;
+
+  Connection(AsyncClient *client, Mesh<painlessmesh::Connection> *mesh,
+             bool station)
+      : painlessmesh::tcp::BufferedConnection(client),
+        mesh(mesh),
+        station(station) {}
+
+  void initTasks() {
+
+    this->onReceive(
+        [mesh = mesh, self = this->shared_from_this()](TSTRING str) {
+          auto variant = painlessmesh::protocol::Variant(str);
+          router::routePackage<painlessmesh::Connection>(
+              (*self->mesh), self->shared_from_this(), str,
+              self->mesh->callbackList, self->mesh->getNodeTime());
+        });
+
+    this->onDisconnect([mesh = mesh, self = this->shared_from_this()]() {
+      self->timeSyncTask.setCallback(NULL);
+      self->timeSyncTask.disable();
+      self->nodeSyncTask.setCallback(NULL);
+      self->nodeSyncTask.disable();
+      self->timeOutTask.setCallback(NULL);
+      self->timeOutTask.disable();
+
+      mesh->addTask([mesh = mesh, nodeId = self->nodeId, station = self->station]() {
+        mesh->changedConnectionCallbacks.execute(nodeId);
+        mesh->droppedConnectionCallbacks.execute(nodeId, station);
+      });
+      self->clear();
+    });
+
+    using namespace logger;
+
+    timeOutTask.set(NODE_TIMEOUT, TASK_ONCE,
+                    [self = this->shared_from_this()]() {
+                      Log(CONNECTION, "Time out reached\n");
+                      self->close();
+                    });
+    mesh->mScheduler->addTask(timeOutTask);
+
+    this->nodeSyncTask.set(
+        TASK_MINUTE, TASK_FOREVER, [self = this->shared_from_this()]() {
+          Log(SYNC, "nodeSyncTask(): request with %u\n", self->nodeId);
+          router::send<protocol::NodeSyncRequest, Connection>(
+              self->request(self->mesh->asNodeTree()), self);
+          self->timeOutTask.disable();
+          self->timeOutTask.restartDelayed();
+        });
+
+    mesh->mScheduler->addTask(this->nodeSyncTask);
+    if (station)
+      this->nodeSyncTask.enable();
+    else
+      this->nodeSyncTask.enableDelayed(10 * TASK_SECOND);
+
+    Log(CONNECTION, "painlessmesh::Connection: New connection established.\n");
+    this->initialize(mesh->mScheduler);
+  }
+
+  bool addMessage(TSTRING msg, bool priority = false) {
+    return this->write(msg, priority);
+  }
+
+ protected:
+  std::shared_ptr<Connection> shared_from_this() { return shared_from(this); }
+};
 };  // namespace painlessmesh
 #endif

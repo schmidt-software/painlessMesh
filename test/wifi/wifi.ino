@@ -11,8 +11,6 @@
 //************************************************************
 #include "painlessmesh/configuration.hpp"
 
-#include "painlessMeshConnection.h"
-
 #include "painlessmesh/mesh.hpp"
 #include "painlessmesh/tcp.hpp"
 #include "plugin/performance.hpp"
@@ -20,7 +18,7 @@
 using namespace painlessmesh;
 using namespace logger;
 
-painlessmesh::Mesh<MeshConnection> mesh;
+painlessmesh::Mesh<painlessmesh::Connection> mesh;
 
 std::shared_ptr<AsyncServer> pServer;
 
@@ -49,13 +47,13 @@ void setup() {
   plugin::performance::begin(mesh);
 
   pServer = std::make_shared<AsyncServer>(5555);
-  painlessmesh::tcp::initServer<MeshConnection>((*pServer), mesh);
+  painlessmesh::tcp::initServer<painlessmesh::Connection>((*pServer), mesh);
   eventSTAGotIPHandler = WiFi.onEvent(
       [&](WiFiEvent_t event, WiFiEventInfo_t info) {
         // if (this->semaphoreTake()) {
         Log(CONNECTION, "eventSTAGotIPHandler: SYSTEM_EVENT_STA_GOT_IP\n");
         AsyncClient *pConn = new AsyncClient();
-        painlessmesh::tcp::connect<MeshConnection>(
+        painlessmesh::tcp::connect<painlessmesh::Connection>(
             (*pConn), IPAddress(192, 168, 1, 69), 5555, mesh);
         // this->tcpConnect();  // Connect to TCP port
         //  this->semaphoreGive();

@@ -3,6 +3,8 @@
 
 #include "painlessmesh/configuration.hpp"
 
+#include "painlessmesh/mesh.hpp"
+
 #include <list>
 
 typedef struct {

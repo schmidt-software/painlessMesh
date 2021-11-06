@@ -5,7 +5,6 @@
 
 #include "painlessmesh/logger.hpp"
 #ifdef PAINLESSMESH_ENABLE_ARDUINO_WIFI
-#include "painlessMeshConnection.h"
 #include "painlessMeshSTA.h"
 
 #include "painlessmesh/callback.hpp"
@@ -17,7 +16,7 @@ extern painlessmesh::logger::LogClass Log;
 
 namespace painlessmesh {
 namespace wifi {
-class Mesh : public painlessmesh::Mesh<MeshConnection> {
+class Mesh : public painlessmesh::Mesh<Connection> {
  public:
   /** Initialize the mesh network
    *
@@ -145,8 +144,8 @@ class Mesh : public painlessmesh::Mesh<MeshConnection> {
     using namespace logger;
     Log(GENERAL, "tcpServerInit():\n");
     _tcpListener = new AsyncServer(_meshPort);
-    painlessmesh::tcp::initServer<MeshConnection,
-                                  painlessmesh::Mesh<MeshConnection>>(
+    painlessmesh::tcp::initServer<Connection,
+                                  painlessmesh::Mesh<Connection>>(
         (*_tcpListener), (*this));
     Log(STARTUP, "AP tcp server established on port %d\n", _meshPort);
     return;
@@ -169,8 +168,8 @@ class Mesh : public painlessmesh::Mesh<MeshConnection> {
         ip = stationScan.manualIP;
       }
 
-      painlessmesh::tcp::connect<MeshConnection,
-                                 painlessmesh::Mesh<MeshConnection>>(
+      painlessmesh::tcp::connect<Connection,
+                                 painlessmesh::Mesh<Connection>>(
           (*pConn), ip, stationScan.port, (*this));
     } else {
       Log(ERROR, "tcpConnect(): err Something un expected in tcpConnect()\n");
@@ -206,7 +205,7 @@ class Mesh : public painlessmesh::Mesh<MeshConnection> {
     // Stop scanning task
     stationScan.task.setCallback(NULL);
     mScheduler->deleteTask(stationScan.task);
-    painlessmesh::Mesh<MeshConnection>::stop();
+    painlessmesh::Mesh<Connection>::stop();
 
     // Shutdown wifi hardware
     if (WiFi.status() != WL_DISCONNECTED) WiFi.disconnect();
@@ -225,10 +224,10 @@ class Mesh : public painlessmesh::Mesh<MeshConnection> {
   StationScan stationScan;
 
   void init(Scheduler *scheduler, uint32_t id) {
-    painlessmesh::Mesh<MeshConnection>::init(scheduler, id);
+    painlessmesh::Mesh<Connection>::init(scheduler, id);
   }
 
-  void init(uint32_t id) { painlessmesh::Mesh<MeshConnection>::init(id); }
+  void init(uint32_t id) { painlessmesh::Mesh<Connection>::init(id); }
 
   void apInit(uint32_t nodeId) {
     _apIp = IPAddress(10, (nodeId & 0xFF00) >> 8, (nodeId & 0xFF), 1);

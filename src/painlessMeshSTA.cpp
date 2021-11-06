@@ -103,8 +103,8 @@ void ICACHE_FLASH_ATTR StationScan::filterAPs() {
   auto ap = aps.begin();
   while (ap != aps.end()) {
     auto apNodeId = painlessmesh::tcp::encodeNodeId(ap->bssid);
-    if (painlessmesh::router::findRoute<MeshConnection>((*mesh), apNodeId) !=
-        NULL) {
+    if (painlessmesh::router::findRoute<painlessmesh::Connection>(
+            (*mesh), apNodeId) != NULL) {
       ap = aps.erase(ap);
     } else {
       ap++;
