@@ -158,8 +158,8 @@ void handleNodeSync(T& mesh, protocol::NodeTree newTree,
       conn->close();
       return;
     }
-
-    mesh.addTask([&mesh, remoteNodeId = newTree.nodeId]() {
+    auto remoteNodeId = newTree.nodeId;
+    mesh.addTask([&mesh, remoteNodeId]() {
       Log(logger::CONNECTION, "newConnectionTask():\n");
       Log(logger::CONNECTION, "newConnectionTask(): adding %u now= %u\n",
           remoteNodeId, mesh.getNodeTime());
@@ -186,7 +186,8 @@ void handleNodeSync(T& mesh, protocol::NodeTree newTree,
   }
 
   if (conn->updateSubs(newTree)) {
-    mesh.addTask([&mesh, nodeId = newTree.nodeId]() {
+    auto nodeId = newTree.nodeId;
+    mesh.addTask([&mesh, nodeId]() {
       mesh.changedConnectionCallbacks.execute(nodeId);
     });
   } else {

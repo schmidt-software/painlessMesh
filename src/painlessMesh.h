@@ -17,7 +17,6 @@
 #endif  // ESP32
 
 #ifdef PAINLESSMESH_ENABLE_ARDUINO_WIFI
-#include "painlessMeshConnection.h"
 #include "painlessMeshSTA.h"
 
 #include "arduino/wifi.hpp"
@@ -49,8 +48,7 @@ using namespace painlessmesh::logger;
  */
 
 #ifndef PAINLESSMESH_ENABLE_ARDUINO_WIFI
-class MeshConnection;
-using painlessMesh = painlessmesh::Mesh<MeshConnection>;
+using painlessMesh = painlessmesh::Mesh<Connection>;
 #endif
 
 #endif  //   _EASY_MESH_H_

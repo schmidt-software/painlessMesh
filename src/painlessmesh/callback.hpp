@@ -6,6 +6,7 @@
 #include "painlessmesh/configuration.hpp"
 
 #include "painlessmesh/logger.hpp"
+#include "painlessmesh/protocol.hpp"
 
 extern painlessmesh::logger::LogClass Log;
 

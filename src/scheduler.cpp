@@ -5,6 +5,6 @@
 #include "painlessTaskOptions.h"
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <TaskScheduler.h>
 #pragma GCC diagnostic pop

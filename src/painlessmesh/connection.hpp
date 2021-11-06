@@ -49,8 +49,9 @@ class BufferedConnection
   }
 
   void initialize(Scheduler *scheduler) {
+    auto self = this->shared_from_this();
     sentBufferTask.set(
-        TASK_SECOND, TASK_FOREVER, [self = this->shared_from_this()]() {
+        TASK_SECOND, TASK_FOREVER, [self]() {
           if (!self->sentBuffer.empty() && self->client->canSend()) {
             auto ret = self->writeNext();
             if (ret)
@@ -63,7 +64,7 @@ class BufferedConnection
     sentBufferTask.enableDelayed();
 
     readBufferTask.set(TASK_SECOND, TASK_FOREVER,
-                       [self = this->shared_from_this()]() {
+                       [self]() {
                          if (!self->receiveBuffer.empty()) {
                            TSTRING frnt = self->receiveBuffer.front();
                            self->receiveBuffer.pop_front();
@@ -77,14 +78,14 @@ class BufferedConnection
     readBufferTask.enableDelayed();
 
     client->onAck(
-        [self = this->shared_from_this()](void *arg, AsyncClient *client,
+        [self](void *arg, AsyncClient *client,
                                           size_t len, uint32_t time) {
           self->sentBufferTask.forceNextIteration();
         },
         NULL);
 
     client->onData(
-        [self = this->shared_from_this()](void *arg, AsyncClient *client,
+        [self](void *arg, AsyncClient *client,
                                           void *data, size_t len) {
           self->receiveBuffer.push(static_cast<const char *>(data), len,
                                    shared_buffer);
@@ -94,7 +95,7 @@ class BufferedConnection
         },
         NULL);
 
-    client->onDisconnect([self = this->shared_from_this()](
+    client->onDisconnect([self](
                              void *arg, AsyncClient *client) { self->close(); },
                          NULL);
   }
@@ -187,7 +188,6 @@ class BufferedConnection
 
   template <typename T>
   std::shared_ptr<T> shared_from(T *derived) {
-    assert(this == derived);
     return std::static_pointer_cast<T>(shared_from_this());
   }
 };  // namespace tcp

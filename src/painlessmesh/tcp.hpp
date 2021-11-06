@@ -33,7 +33,6 @@ void initServer(AsyncServer &server, M &mesh) {
           Log(CONNECTION, "New AP connection incoming\n");
           auto conn = std::make_shared<T>(client, &mesh, false);
           conn->initTasks();
-          conn->initTCPCallbacks();
           mesh.subs.push_back(conn);
           mesh.semaphoreGive();
         }
@@ -59,7 +58,6 @@ void connect(AsyncClient &client, IPAddress ip, uint16_t port, M &mesh) {
           Log(CONNECTION, "New STA connection incoming\n");
           auto conn = std::make_shared<T>(client, &mesh, true);
           conn->initTasks();
-          conn->initTCPCallbacks();
           mesh.subs.push_back(conn);
           mesh.semaphoreGive();
         }

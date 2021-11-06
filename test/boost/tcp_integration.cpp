@@ -11,11 +11,9 @@
 WiFiClass WiFi;
 ESPClass ESP;
 
-#include "painlessMeshConnection.h"
-
 #include "painlessmesh/mesh.hpp"
 
-using PMesh = painlessmesh::Mesh<MeshConnection>;
+using PMesh = painlessmesh::Mesh<painlessmesh::Connection>;
 
 using namespace painlessmesh;
 painlessmesh::logger::LogClass Log;
@@ -28,12 +26,13 @@ class MeshTest : public PMesh {
     this->init(scheduler, this->nodeId);
     timeOffset = runif(0, 1e09);
     pServer = std::make_shared<AsyncServer>(io_service, this->nodeId);
-    painlessmesh::tcp::initServer<MeshConnection, PMesh>(*pServer, (*this));
+    painlessmesh::tcp::initServer<painlessmesh::Connection, PMesh>(*pServer,
+                                                                   (*this));
   }
 
   void connect(MeshTest &mesh) {
     auto pClient = new AsyncClient(io_service);
-    painlessmesh::tcp::connect<MeshConnection, PMesh>(
+    painlessmesh::tcp::connect<Connection, PMesh>(
         (*pClient), boost::asio::ip::address::from_string("127.0.0.1"),
         mesh.nodeId, (*this));
   }
@@ -84,12 +83,12 @@ SCENARIO("We can setup and connect two meshes over localport") {
   mesh1.init(&scheduler, 6841);
   std::shared_ptr<AsyncServer> pServer;
   pServer = std::make_shared<AsyncServer>(io_service, 6841);
-  painlessmesh::tcp::initServer<MeshConnection, PMesh>(*pServer, mesh1);
+  painlessmesh::tcp::initServer<Connection, PMesh>(*pServer, mesh1);
 
   PMesh mesh2;
   mesh2.init(&scheduler, 6842);
   auto pClient = new AsyncClient(io_service);
-  painlessmesh::tcp::connect<MeshConnection, PMesh>(
+  painlessmesh::tcp::connect<Connection, PMesh>(
       (*pClient), boost::asio::ip::address::from_string("127.0.0.1"), 6841,
       mesh2);
 
