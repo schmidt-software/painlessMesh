@@ -53,7 +53,7 @@ bool send(T package, layout::Layout<U> layout) {
   auto variant = painlessmesh::protocol::Variant(package);
   TSTRING msg;
   variant.printTo(msg);
-  auto conn = findRoute<U>(layout, variant.dest);
+  auto conn = findRoute<U>(layout, variant.dest());
   if (conn) return conn->addMessage(msg);
   return false;
 }
