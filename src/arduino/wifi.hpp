@@ -142,6 +142,7 @@ class Mesh : public painlessmesh::Mesh<Connection> {
 
   void tcpServerInit() {
     using namespace logger;
+    Log(APPLICATION, "new AsyncServer\n");
     Log(GENERAL, "tcpServerInit():\n");
     _tcpListener = new AsyncServer(_meshPort);
     painlessmesh::tcp::initServer<Connection,
@@ -161,6 +162,7 @@ class Mesh : public painlessmesh::Mesh<Connection> {
     // TODO: We could pass this to tcpConnect instead of loading it here
 
     if (WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
+      Log(APPLICATION, "new AsyncClient\n");
       AsyncClient *pConn = new AsyncClient();
 
       IPAddress ip = WiFi.gatewayIP();
@@ -209,6 +211,10 @@ class Mesh : public painlessmesh::Mesh<Connection> {
 
     // Shutdown wifi hardware
     if (WiFi.status() != WL_DISCONNECTED) WiFi.disconnect();
+    
+    // Delete the tcp server
+    Log(painlessmesh::logger::APPLICATION, "delete AsyncServer\n");
+    delete _tcpListener;
   }
 
  protected:

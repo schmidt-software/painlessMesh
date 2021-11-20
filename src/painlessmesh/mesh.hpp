@@ -139,6 +139,10 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
       this->eraseClosedConnections();
     }
     plugin::PackageHandler<T>::stop();
+
+    if (!isExternalScheduler) {
+      delete mScheduler;
+    }
   }
 
   /** Perform crucial maintenance task
