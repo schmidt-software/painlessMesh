@@ -26,6 +26,14 @@ class List {
     return callbacks.size();
   }
 
+  size_t size() {
+    return callbacks.size();
+  }
+
+  void clear() {
+    return callbacks.clear();
+  }
+
   /*
    * Needs to be wrapped into semaphore
    *

@@ -39,7 +39,6 @@ void setup() {
   mesh.setDebugMsgTypes(ERROR | APPLICATION);
 
   startMesh();
-  mesh.onReceive(&receivedCallback);
   mesh.setContainsRoot(true);
 
   randomSeed(analogRead(A0));
@@ -70,6 +69,7 @@ void startMesh() {
   mesh.init(MESH_SSID, MESH_PASSWORD, &userScheduler, MESH_PORT, WIFI_STA);
   meshUp = true;
   stop_timer = millis() + 30000;  // keep up for 30s
+  mesh.onReceive(&receivedCallback);
 }
 
 void stopMesh() {
