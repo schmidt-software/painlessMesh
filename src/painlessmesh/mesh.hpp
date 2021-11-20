@@ -144,11 +144,6 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
     droppedConnectionCallbacks.clear();
     changedConnectionCallbacks.clear();
 
-    Log(logger::APPLICATION, "callbacks %u, %u, %u\n",
-        newConnectionCallbacks.size(),
-        droppedConnectionCallbacks.size(),
-        changedConnectionCallbacks.size());
-
     if (!isExternalScheduler) {
       delete mScheduler;
     }

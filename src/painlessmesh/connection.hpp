@@ -45,7 +45,6 @@ class BufferedConnection
       client->close(true);
     }
     client->abort();
-    Log(painlessmesh::logger::APPLICATION, "delete client\n");
     delete client;
   }
 
