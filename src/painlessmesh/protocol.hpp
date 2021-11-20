@@ -178,6 +178,13 @@ class NodeTree : public PackageInterface {
     return size;
   }
 
+  size_t size() {
+    size_t size = 1;
+    for (auto && s : subs)
+      size += s.size();
+    return size;
+  }
+
   void clear() {
     nodeId = 0;
     subs.clear();

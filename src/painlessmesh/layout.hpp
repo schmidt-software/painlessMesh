@@ -10,6 +10,21 @@ namespace painlessmesh {
 namespace layout {
 
 #include <memory>
+
+/**
+* Update/replace the tree with a new subtree
+*/
+inline protocol::NodeTree update_subtree(protocol::NodeTree &&tree, const protocol::NodeTree &subtree) {
+  if (tree.nodeId == subtree.nodeId) {
+    return subtree;
+  }
+  for (auto & s : tree.subs) {
+    // TODO: make this stop as soon as the update has been performed, otherwise we will keep going deeper
+    s = update_subtree(std::move(s), subtree);
+  }
+  return tree;
+}
+
 /**
  * Whether the tree contains the given nodeId
  */
