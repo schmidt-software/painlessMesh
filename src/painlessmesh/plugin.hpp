@@ -110,6 +110,9 @@ class PackageHandler : public layout::Layout<T> {
       task->setCallback(NULL);
     }
     taskList.clear();
+    callbackList.clear();
+    Log(logger::APPLICATION,
+      "callback size: %u\n", callbackList.size());
   }
 
   ~PackageHandler() {
