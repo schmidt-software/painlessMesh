@@ -209,6 +209,9 @@ class Mesh : public painlessmesh::Mesh<Connection> {
 
     // Shutdown wifi hardware
     if (WiFi.status() != WL_DISCONNECTED) WiFi.disconnect();
+    
+    // Delete the tcp server
+    delete _tcpListener;
   }
 
  protected:

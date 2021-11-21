@@ -110,6 +110,7 @@ class PackageHandler : public layout::Layout<T> {
       task->setCallback(NULL);
     }
     taskList.clear();
+    callbackList.clear();
   }
 
   ~PackageHandler() {

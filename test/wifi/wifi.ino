@@ -76,7 +76,7 @@ void setup() {
 
 
   WiFi.setAutoConnect(true);
-  WiFi.begin("BigBird", "eendolleman");
+  WiFi.begin("otatest", "somethingSneaky");
   Log(CONNECTION, "Beginning\n");
   mesh.addTask(TASK_SECOND, TASK_FOREVER, []() {
       Log(CONNECTION, "Connected? %d\n", WiFi.status() == WL_CONNECTED);
