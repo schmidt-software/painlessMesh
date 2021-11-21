@@ -14,17 +14,17 @@ static std::random_device
     rd;  // Will be used to obtain a seed for the random number engine
 static std::mt19937 gen(rd());
 
-uint32_t runif(uint32_t from, uint32_t to) {
+inline uint32_t runif(uint32_t from, uint32_t to) {
   std::uniform_int_distribution<uint32_t> distribution(from, to);
   return distribution(gen);
 }
 
-uint32_t rbinom(size_t n, double p) {
+inline uint32_t rbinom(size_t n, double p) {
   std::binomial_distribution<uint32_t> distribution(n, p);
   return distribution(gen);
 }
 
-std::string randomString(uint32_t length) {
+inline std::string randomString(uint32_t length) {
   std::string str;
   for (uint32_t i = 0; i < length; ++i) {
     char rnd = (char)runif(65, 90);
@@ -33,7 +33,7 @@ std::string randomString(uint32_t length) {
   return str;
 }
 
-void randomCString(char* str, uint32_t length) {
+inline void randomCString(char* str, uint32_t length) {
   for (uint32_t i = 0; i < length; ++i) {
     char rnd = (char)runif(65, 90);
     str[i] = rnd;
@@ -41,7 +41,7 @@ void randomCString(char* str, uint32_t length) {
   str[length] = '\0';
 }
 
-painlessmesh::protocol::Single createSingle(int length = -1) {
+inline painlessmesh::protocol::Single createSingle(int length = -1) {
   auto pkg = painlessmesh::protocol::Single();
   pkg.dest = runif(0, std::numeric_limits<uint32_t>::max());
   pkg.from = runif(0, std::numeric_limits<uint32_t>::max());
@@ -51,7 +51,7 @@ painlessmesh::protocol::Single createSingle(int length = -1) {
   return pkg;
 }
 
-painlessmesh::protocol::Broadcast createBroadcast(int length = -1) {
+inline painlessmesh::protocol::Broadcast createBroadcast(int length = -1) {
   auto pkg = painlessmesh::protocol::Broadcast();
   pkg.dest = runif(0, std::numeric_limits<uint32_t>::max());
   pkg.from = runif(0, std::numeric_limits<uint32_t>::max());
@@ -60,53 +60,24 @@ painlessmesh::protocol::Broadcast createBroadcast(int length = -1) {
   return pkg;
 }
 
-/*
-```
-{
-  "dest": ...,
-  "from": ...,
-  "type": ...,
-  "subs": [
-    {
-      "nodeId": ...,
-      "root" : true,
-      "subs": [
-        {
-          "nodeId": ...,
-          "subs": []
-        }
-      ]
-    }
-   ]
-}
-```
-*/
-painlessmesh::protocol::NodeTree createNodeTree(int nodes, int contains_root) {
+inline painlessmesh::protocol::NodeTree createNodeTree(int nodes, int contains_root) {
   auto pkg = painlessmesh::protocol::NodeTree();
   pkg.nodeId = runif(0, std::numeric_limits<uint32_t>::max());
   if (contains_root == 0) {
     pkg.root = true;
+    --nodes;  // The current node
+    --contains_root;
+  } else if (contains_root >= 0 && contains_root <= nodes) {
+    pkg.containsRoot = true;
   }
-  --nodes;  // The current node
-  --contains_root;
-  auto noSubs = runif(1, 5);
-  for (uint32_t i = 0; i < noSubs; ++i) {
-    if (nodes > 0) {
-      if (i == noSubs - 1) {
-        pkg.subs.push_back(createNodeTree(nodes, contains_root));
-      } else {
-        auto newNodes = 1 + rbinom(nodes - 1, 1.0 / noSubs);
-        nodes -= newNodes;
-        if (newNodes > 0)
-          pkg.subs.push_back(createNodeTree(newNodes, contains_root));
-        contains_root -= newNodes;
-      }
-    }
+  while (nodes > 0) {
+    pkg.knownNodes.push_back(runif(0, std::numeric_limits<uint32_t>::max()));
+    --nodes;
   }
   return pkg;
 }
 
-painlessmesh::protocol::NodeSyncReply createNodeSyncReply(
+inline painlessmesh::protocol::NodeSyncReply createNodeSyncReply(
     int nodes = -1, bool contains_root = true) {
   auto pkg = painlessmesh::protocol::NodeSyncReply();
   pkg.dest = runif(0, std::numeric_limits<uint32_t>::max());
@@ -115,13 +86,14 @@ painlessmesh::protocol::NodeSyncReply createNodeSyncReply(
   auto rt = -1;
   if (contains_root) rt = runif(0, nodes - 1);
   auto ns = createNodeTree(nodes, rt);
-  pkg.subs = ns.subs;
+  pkg.knownNodes = ns.knownNodes;
   pkg.nodeId = ns.nodeId;
   pkg.root = ns.root;
+  pkg.containsRoot = ns.containsRoot;
   return pkg;
 }
 
-painlessmesh::protocol::NodeSyncRequest createNodeSyncRequest(
+inline painlessmesh::protocol::NodeSyncRequest createNodeSyncRequest(
     int nodes = -1, bool contains_root = true) {
   auto pkg = painlessmesh::protocol::NodeSyncRequest();
   pkg.dest = runif(0, std::numeric_limits<uint32_t>::max());
@@ -130,9 +102,10 @@ painlessmesh::protocol::NodeSyncRequest createNodeSyncRequest(
   auto rt = -1;
   if (contains_root) rt = runif(0, nodes - 1);
   auto ns = createNodeTree(nodes, rt);
-  pkg.subs = ns.subs;
+  pkg.knownNodes = ns.knownNodes;
   pkg.nodeId = ns.nodeId;
   pkg.root = ns.root;
+  pkg.containsRoot = ns.containsRoot;
   return pkg;
 }
 
@@ -170,7 +143,7 @@ painlessmesh::protocol::NodeSyncRequest createNodeSyncRequest(
 }
 ```
 */
-painlessmesh::protocol::TimeSync createTimeSync(int type = -1) {
+inline painlessmesh::protocol::TimeSync createTimeSync(int type = -1) {
   auto pkg = painlessmesh::protocol::TimeSync();
   pkg.dest = runif(0, std::numeric_limits<uint32_t>::max());
   pkg.from = runif(0, std::numeric_limits<uint32_t>::max());
@@ -188,7 +161,7 @@ painlessmesh::protocol::TimeSync createTimeSync(int type = -1) {
   return pkg;
 }
 
-painlessmesh::protocol::TimeDelay createTimeDelay(int type = -1) {
+inline painlessmesh::protocol::TimeDelay createTimeDelay(int type = -1) {
   auto pkg = painlessmesh::protocol::TimeDelay();
   pkg.dest = runif(0, std::numeric_limits<uint32_t>::max());
   pkg.from = runif(0, std::numeric_limits<uint32_t>::max());

@@ -1,6 +1,7 @@
 #ifndef _PAINLESS_MESH_LAYOUT_HPP_
 #define _PAINLESS_MESH_LAYOUT_HPP_
 
+#include <algorithm>
 #include <list>
 #include <memory>
 
@@ -11,18 +12,17 @@ namespace layout {
 
 #include <memory>
 
-/**
-* Update/replace the tree with a new subtree
-*/
-inline protocol::NodeTree update_subtree(protocol::NodeTree &&tree, const protocol::NodeTree &subtree) {
-  if (tree.nodeId == subtree.nodeId) {
-    return subtree;
-  }
-  for (auto & s : tree.subs) {
-    // TODO: make this stop as soon as the update has been performed, otherwise we will keep going deeper
-    s = update_subtree(std::move(s), subtree);
-  }
-  return tree;
+/*
+ * Generic function to find if an element of any type exists in list
+ */
+template <typename T>
+bool contains(std::list<T>& listOfElements, const T& element) {
+  // Find the iterator if element in list
+  auto it = std::find(listOfElements.begin(), listOfElements.end(), element);
+  // return if iterator points to end or not. It points to end then it means
+  // element
+  // does not exists in list
+  return it != listOfElements.end();
 }
 
 /**
@@ -32,26 +32,16 @@ inline bool contains(protocol::NodeTree nodeTree, uint32_t nodeId) {
   if (nodeTree.nodeId == nodeId) {
     return true;
   }
-  for (auto&& s : nodeTree.subs) {
-    if (contains(s, nodeId)) return true;
-  }
-  return false;
-}
-
-inline protocol::NodeTree excludeRoute(protocol::NodeTree&& tree,
-                                       uint32_t exclude) {
-  // Make sure to exclude any subs with nodeId == 0,
-  // even if exlude is not set to zero
-  tree.subs.remove_if([exclude](protocol::NodeTree s) {
-    return s.nodeId == 0 || s.nodeId == exclude;
-  });
-  return tree;
+  return contains(nodeTree.knownNodes, nodeId);
 }
 
 template <class T>
 class Layout {
  public:
   size_t stability = 0;
+
+  // T is expected to behave like a NodeTree/Neighbour
+
   std::list<std::shared_ptr<T> > subs;
 
   /** Return the nodeId of the node that we are running on.
@@ -61,19 +51,19 @@ class Layout {
    */
   uint32_t getNodeId() { return nodeId; }
 
-  protocol::NodeTree asNodeTree() {
-    auto nt = protocol::NodeTree(nodeId, root);
-    for (auto&& s : subs) {
-      if (s->nodeId == 0) continue;
-      nt.subs.push_back(protocol::NodeTree(*s));
-    }
-    return nt;
-  }
-
  protected:
   uint32_t nodeId = 0;
   bool root = false;
 };
+
+template <typename T>
+inline Layout<T> excludeRoute(Layout<T> layout, uint32_t exclude) {
+  // Make sure to exclude any subs with nodeId == 0,
+  // even if exlude is not set to zero
+  layout.subs.remove_if(
+      [exclude](auto s) { return s.nodeId == 0 || s.nodeId == exclude; });
+  return layout;
+}
 
 template <class T>
 void syncLayout(Layout<T>& layout, uint32_t changedId) {
@@ -103,10 +93,9 @@ class Neighbour : public protocol::NodeTree {
     if (nodeId == 0)  // Cant really know, so valid as far as we know
       return true;
     if (nodeId != tree.nodeId) return false;
-    for (auto&& s : tree.subs) {
-      if (layout::contains(s, nodeId)) return false;
-    }
-    return true;
+    // Detect a loop, if the knownNodes contain the nodeId, then that can't be
+    // good
+    return !layout::contains(tree.knownNodes, nodeId);
   }
 
   /**
@@ -122,8 +111,9 @@ class Neighbour : public protocol::NodeTree {
   bool updateSubs(protocol::NodeTree tree) {
     if (nodeId == 0 || tree != (*this)) {
       nodeId = tree.nodeId;
-      subs = tree.subs;
+      knownNodes = tree.knownNodes;
       root = tree.root;
+      containsRoot = tree.containsRoot;
       return true;
     }
     return false;
@@ -132,7 +122,8 @@ class Neighbour : public protocol::NodeTree {
   /**
    * Create a request
    */
-  protocol::NodeSyncRequest request(NodeTree&& layout) {
+  template <typename T>
+  protocol::NodeSyncRequest request(layout::Layout<T> layout) {
     auto subTree = excludeRoute(std::move(layout), nodeId);
     return protocol::NodeSyncRequest(subTree.nodeId, nodeId, subTree.subs,
                                      subTree.root);
@@ -141,7 +132,8 @@ class Neighbour : public protocol::NodeTree {
   /**
    * Create a reply
    */
-  protocol::NodeSyncReply reply(NodeTree&& layout) {
+  template <typename T>
+  protocol::NodeSyncReply reply(layout::Layout<T>&& layout) {
     auto subTree = excludeRoute(std::move(layout), nodeId);
     return protocol::NodeSyncReply(subTree.nodeId, nodeId, subTree.subs,
                                    subTree.root);
@@ -152,10 +144,13 @@ class Neighbour : public protocol::NodeTree {
  * The size of the mesh (the number of nodes)
  */
 inline uint32_t size(protocol::NodeTree nodeTree) {
-  auto no = 1;
-  for (auto&& s : nodeTree.subs) {
-    no += size(s);
-  }
+  return nodeTree.knownNodes.size() + 1;
+}
+
+template <typename T>
+inline uint32_t size(const Layout<T>& layout) {
+  uint32_t no = 1;
+  for (auto&& s : layout.subs) no += size((*s));
   return no;
 }
 
@@ -171,17 +166,14 @@ inline bool isRoot(protocol::NodeTree nodeTree) {
  * Whether any node in the tree is also root of the mesh
  */
 inline bool isRooted(protocol::NodeTree nodeTree) {
-  if (isRoot(nodeTree)) return true;
-  for (auto&& s : nodeTree.subs) {
-    if (isRooted(s)) return true;
-  }
-  return false;
+  return (isRoot(nodeTree) || nodeTree.containsRoot);
 }
 
 /**
  * Return all nodes in a list container
  */
-inline std::list<uint32_t> asList(protocol::NodeTree nodeTree,
+template <typename T>
+inline std::list<uint32_t> asList(layout::Layout<T> nodeTree,
                                   bool includeSelf = true) {
   std::list<uint32_t> lst;
   if (includeSelf) lst.push_back(nodeTree.nodeId);
@@ -195,4 +187,3 @@ inline std::list<uint32_t> asList(protocol::NodeTree nodeTree,
 }  // namespace painlessmesh
 
 #endif
-

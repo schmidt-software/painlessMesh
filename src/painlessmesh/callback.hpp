@@ -2,6 +2,7 @@
 #define _PAINLESS_MESH_CALLBACK_HPP_
 
 #include<map>
+#include<memory>
 
 #include "painlessmesh/configuration.hpp"
 

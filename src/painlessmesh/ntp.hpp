@@ -61,17 +61,18 @@ inline int32_t tripDelay(uint32_t time0, uint32_t time1, uint32_t time2,
   return ((time3 - time0) - (time2 - time1)) / 2;
 }
 
-inline bool adopt(protocol::NodeTree mesh, protocol::NodeTree connection) {
-  auto mySubCount =
-      layout::size(layout::excludeRoute(std::move(mesh), connection.nodeId));
+template <typename T>
+inline bool adopt(layout::Layout<T> mesh, protocol::NodeTree connection) {
+  auto mySubCount = layout::size(layout::excludeRoute(mesh, connection.nodeId));
   auto remoteSubCount = layout::size(connection);
   if (mySubCount > remoteSubCount) return false;
   if (mySubCount == remoteSubCount) {
     if (connection.nodeId == 0)
       Log(logger::ERROR, "Adopt called on uninitialized connection\n");
-    // TODO: there is a change here that a middle node also lower is than the two others and will
-    // start switching between both. Maybe should do it randomly instead?
-    return mesh.nodeId < connection.nodeId;
+    // TODO: there is a chance here that a middle node also lower is than the
+    // two others and will start switching between both. Should check for that
+    // particular issue by adopting from the neighbour with the highest nodeID
+    return mesh.getNodeId() < connection.nodeId;
   }
   return true;
 }

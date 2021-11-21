@@ -370,7 +370,7 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
     Log(S_TIME, "startTimeSync(): from %u with %u\n", this->nodeId,
         conn->nodeId);
     painlessmesh::protocol::TimeSync timeSync;
-    if (ntp::adopt(this->asNodeTree(), (*conn))) {
+    if (ntp::adopt((*this), (*conn))) {
       timeSync = painlessmesh::protocol::TimeSync(this->nodeId, conn->nodeId,
                                                   this->getNodeTime());
       Log(S_TIME, "startTimeSync(): Requesting time from %u\n", conn->nodeId);
@@ -517,7 +517,7 @@ class Connection : public painlessmesh::layout::Neighbour,
         TASK_MINUTE, TASK_FOREVER, [self]() {
           Log(SYNC, "nodeSyncTask(): request with %u\n", self->nodeId);
           router::send<protocol::NodeSyncRequest, Connection>(
-              self->request(self->mesh->asNodeTree()), self);
+              self->request(*self->mesh), self);
           self->timeOutTask.disable();
           self->timeOutTask.restartDelayed();
         });

@@ -184,7 +184,7 @@ SCENARIO("A variant can take any package", "[Variant][protocol]") {
         REQUIRE(newPkg.from == pkg.from);
         REQUIRE(newPkg.nodeId == pkg.nodeId);
         REQUIRE(newPkg.root == pkg.root);
-        REQUIRE(newPkg.subs.size() == pkg.subs.size());
+        REQUIRE(newPkg.knownNodes.size() == pkg.knownNodes.size());
         REQUIRE(newPkg.type == pkg.type);
         REQUIRE(newPkg == pkg);
       }
@@ -211,7 +211,7 @@ SCENARIO("A variant can take any package", "[Variant][protocol]") {
         REQUIRE(newPkg.from == pkg.from);
         REQUIRE(newPkg.nodeId == pkg.nodeId);
         REQUIRE(newPkg.root == pkg.root);
-        REQUIRE(newPkg.subs.size() == pkg.subs.size());
+        REQUIRE(newPkg.knownNodes.size() == pkg.knownNodes.size());
         REQUIRE(newPkg.type == pkg.type);
         REQUIRE(newPkg == pkg);
       }
@@ -236,7 +236,7 @@ SCENARIO("A variant can take any package", "[Variant][protocol]") {
         REQUIRE(newPkg.from == pkg.from);
         REQUIRE(newPkg.nodeId == pkg.nodeId);
         REQUIRE(newPkg.root == pkg.root);
-        REQUIRE(newPkg.subs.size() == pkg.subs.size());
+        REQUIRE(newPkg.knownNodes.size() == pkg.knownNodes.size());
         REQUIRE(newPkg.type == pkg.type);
         REQUIRE(newPkg == pkg);
       }
@@ -326,7 +326,7 @@ SCENARIO("NodeSyncReply is backwards compatible", "[Variant][protocol]") {
       THEN("NodeId is set to from value") {
         REQUIRE(nsrId.from == ns.nodeId);
         REQUIRE(nsrId.nodeId == nsId.nodeId);
-        REQUIRE(nsrId.subs == ns.subs);
+        REQUIRE(nsrId.knownNodes == ns.knownNodes);
       }
     }
   }
@@ -376,11 +376,11 @@ SCENARIO("NodeSyncReply supports the == operator", "[Variant][protocol]") {
     // Same subs different base
     auto pkg3 = createNodeSyncReply(5);
     auto pkg4 = createNodeSyncReply(5);
-    pkg4.subs = pkg3.subs;
+    pkg4.knownNodes = pkg3.knownNodes;
 
     // Same base different subs
     auto pkg5 = pkg4;
-    pkg5.subs = pkg1.subs;
+    pkg5.knownNodes = pkg1.knownNodes;
     THEN("They are not equal") {
       REQUIRE(pkg1 != pkg2);
       REQUIRE(pkg2 == pkg2);
@@ -388,10 +388,10 @@ SCENARIO("NodeSyncReply supports the == operator", "[Variant][protocol]") {
       REQUIRE(!(pkg1 != pkg1));
 
       REQUIRE(pkg3 != pkg4);
-      REQUIRE(pkg3.subs == pkg4.subs);
+      REQUIRE(pkg3.knownNodes == pkg4.knownNodes);
 
       REQUIRE(pkg5 != pkg4);
-      REQUIRE(pkg5.subs != pkg4.subs);
+      REQUIRE(pkg5.knownNodes != pkg4.knownNodes);
     }
   }
 }

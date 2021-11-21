@@ -111,7 +111,10 @@ class NodeTree : public PackageInterface {
  public:
   uint32_t nodeId = 0;
   bool root = false;
-  std::list<NodeTree> subs;
+
+  /// Are any of the knownNodes the root node?
+  bool containsRoot = false;
+  std::list<uint32_t> knownNodes;
 
   NodeTree() {}
 
@@ -122,15 +125,16 @@ class NodeTree : public PackageInterface {
 
   NodeTree(JsonObject jsonObj) {
     if (jsonObj.containsKey("root")) root = jsonObj["root"].as<bool>();
+    if (jsonObj.containsKey("containsRoot")) root = jsonObj["containsRoot"].as<bool>();
     if (jsonObj.containsKey("nodeId"))
       nodeId = jsonObj["nodeId"].as<uint32_t>();
     else
       nodeId = jsonObj["from"].as<uint32_t>();
 
-    if (jsonObj.containsKey("subs")) {
-      auto jsonArr = jsonObj["subs"].as<JsonArray>();
+    if (jsonObj.containsKey("knownNodes")) {
+      auto jsonArr = jsonObj["knownNodes"].as<JsonArray>();
       for (size_t i = 0; i < jsonArr.size(); ++i) {
-        subs.push_back(NodeTree(jsonArr[i].as<JsonObject>()));
+        knownNodes.push_back(jsonArr[i].as<uint32_t>());
       }
     }
   }
@@ -138,11 +142,11 @@ class NodeTree : public PackageInterface {
   JsonObject addTo(JsonObject&& jsonObj) const {
     jsonObj["nodeId"] = nodeId;
     if (root) jsonObj["root"] = root;
-    if (subs.size() > 0) {
-      JsonArray subsArr = jsonObj.createNestedArray("subs");
-      for (auto&& s : subs) {
-        JsonObject subObj = subsArr.createNestedObject();
-        subObj = s.addTo(std::move(subObj));
+    if (containsRoot) jsonObj["containsRoot"] = containsRoot;
+    if (knownNodes.size() > 0) {
+      JsonArray subsArr = jsonObj.createNestedArray("knownNodes");
+      for (auto&& id : knownNodes) {
+        subsArr.add(id);
       }
     }
     return jsonObj;
@@ -150,11 +154,12 @@ class NodeTree : public PackageInterface {
 
   bool operator==(const NodeTree& b) const {
     if (!(this->nodeId == b.nodeId && this->root == b.root &&
-          this->subs.size() == b.subs.size()))
+          this->containsRoot == b.containsRoot &&
+          this->knownNodes.size() == b.knownNodes.size()))
       return false;
-    auto itA = this->subs.begin();
-    auto itB = b.subs.begin();
-    for (size_t i = 0; i < this->subs.size(); ++i) {
+    auto itA = this->knownNodes.begin();
+    auto itB = b.knownNodes.begin();
+    for (size_t i = 0; i < this->knownNodes.size(); ++i) {
       if ((*itA) != (*itB)) {
         return false;
       }
@@ -169,28 +174,28 @@ class NodeTree : public PackageInterface {
   TSTRING toString(bool pretty = false);
 
   size_t jsonObjectSize() const {
-    size_t base = 1;
+    size_t base = 1; // nodeId
     if (root) ++base;
-    if (subs.size() > 0) ++base;
+    if (containsRoot) ++base;
+    if (knownNodes.size() > 0) ++base;
     size_t size = JSON_OBJECT_SIZE(base);
-    if (subs.size() > 0) size += JSON_ARRAY_SIZE(subs.size());
-    for (auto&& s : subs) size += s.jsonObjectSize();
-    return size;
-  }
-
-  size_t size() {
-    size_t size = 1;
-    for (auto && s : subs)
-      size += s.size();
+    if (knownNodes.size() > 0) size += JSON_ARRAY_SIZE(knownNodes.size());
     return size;
   }
 
   void clear() {
     nodeId = 0;
-    subs.clear();
+    knownNodes.clear();
     root = false;
+    containsRoot = false;
   }
 };
+
+inline std::list<uint32_t> asList(const protocol::NodeTree &nodeTree) {
+  std::list<uint32_t> nodes = {nodeTree.nodeId};
+  nodes.insert(nodes.end(), nodeTree.knownNodes.begin(), nodeTree.knownNodes.end());
+  return nodes;
+}
 
 /**
  * NodeSyncRequest package
@@ -204,9 +209,15 @@ class NodeSyncRequest : public NodeTree {
   NodeSyncRequest() {}
   NodeSyncRequest(uint32_t fromID, uint32_t destID, std::list<NodeTree> subTree,
                   bool iAmRoot = false) {
+    // TODO SYNC: go over the subtree and append to knownNodes and check for root
+    for (auto && s : subTree) {
+      auto lst = asList(s);
+      knownNodes.insert(knownNodes.end(), lst.begin(), lst.end());
+      if (s.root || s.containsRoot)
+        containsRoot = true;
+    }
     from = fromID;
     dest = destID;
-    subs = subTree;
     nodeId = fromID;
     root = iAmRoot;
   }
@@ -234,13 +245,8 @@ class NodeSyncRequest : public NodeTree {
   }
 
   size_t jsonObjectSize() const {
-    size_t base = 4;
-    if (root) ++base;
-    if (subs.size() > 0) ++base;
-    size_t size = JSON_OBJECT_SIZE(base);
-    if (subs.size() > 0) size += JSON_ARRAY_SIZE(subs.size());
-    for (auto&& s : subs) size += s.jsonObjectSize();
-    return size;
+    // type, dest, from + parent class size
+    return 3 + NodeTree::jsonObjectSize();
   }
 };
 

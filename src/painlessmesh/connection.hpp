@@ -2,6 +2,7 @@
 #define _PAINLESS_MESH_CONNECTION_HPP_
 
 #include <list>
+#include <memory> // enable_shared_from_this
 
 #include "Arduino.h"
 #include "painlessmesh/configuration.hpp"
