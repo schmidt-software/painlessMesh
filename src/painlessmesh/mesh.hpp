@@ -139,6 +139,14 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
       this->eraseClosedConnections();
     }
     plugin::PackageHandler<T>::stop();
+
+    newConnectionCallbacks.clear();
+    droppedConnectionCallbacks.clear();
+    changedConnectionCallbacks.clear();
+
+    if (!isExternalScheduler) {
+      delete mScheduler;
+    }
   }
 
   /** Perform crucial maintenance task
@@ -480,13 +488,12 @@ class Connection : public painlessmesh::layout::Neighbour,
   void initTasks() {
     auto self = this->shared_from_this();
     auto mesh = this->mesh;
-    this->onReceive(
-        [mesh, self](TSTRING str) {
-          auto variant = painlessmesh::protocol::Variant(str);
-          router::routePackage<painlessmesh::Connection>(
-              (*self->mesh), self->shared_from_this(), str,
-              self->mesh->callbackList, self->mesh->getNodeTime());
-        });
+    this->onReceive([mesh, self](TSTRING str) {
+      auto variant = painlessmesh::protocol::Variant(str);
+      router::routePackage<painlessmesh::Connection>(
+          (*self->mesh), self->shared_from_this(), str,
+          self->mesh->callbackList, self->mesh->getNodeTime());
+    });
 
     this->onDisconnect([mesh, self]() {
       self->timeSyncTask.setCallback(NULL);
@@ -506,21 +513,19 @@ class Connection : public painlessmesh::layout::Neighbour,
 
     using namespace logger;
 
-    timeOutTask.set(NODE_TIMEOUT, TASK_ONCE,
-                    [self]() {
-                      Log(CONNECTION, "Time out reached\n");
-                      self->close();
-                    });
+    timeOutTask.set(NODE_TIMEOUT, TASK_ONCE, [self]() {
+      Log(CONNECTION, "Time out reached\n");
+      self->close();
+    });
     mesh->mScheduler->addTask(timeOutTask);
 
-    this->nodeSyncTask.set(
-        TASK_MINUTE, TASK_FOREVER, [self]() {
-          Log(SYNC, "nodeSyncTask(): request with %u\n", self->nodeId);
-          router::send<protocol::NodeSyncRequest, Connection>(
-              self->request(self->mesh->asNodeTree()), self);
-          self->timeOutTask.disable();
-          self->timeOutTask.restartDelayed();
-        });
+    this->nodeSyncTask.set(TASK_MINUTE, TASK_FOREVER, [self]() {
+      Log(SYNC, "nodeSyncTask(): request with %u\n", self->nodeId);
+      router::send<protocol::NodeSyncRequest, Connection>(
+          self->request(self->mesh->asNodeTree()), self);
+      self->timeOutTask.disable();
+      self->timeOutTask.restartDelayed();
+    });
 
     mesh->mScheduler->addTask(this->nodeSyncTask);
     if (station)

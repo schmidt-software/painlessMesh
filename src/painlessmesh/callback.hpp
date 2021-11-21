@@ -1,7 +1,7 @@
 #ifndef _PAINLESS_MESH_CALLBACK_HPP_
 #define _PAINLESS_MESH_CALLBACK_HPP_
 
-#include<map>
+#include <map>
 
 #include "painlessmesh/configuration.hpp"
 
@@ -25,6 +25,10 @@ class List {
     }
     return callbacks.size();
   }
+
+  size_t size() { return callbacks.size(); }
+
+  void clear() { return callbacks.clear(); }
 
   /*
    * Needs to be wrapped into semaphore
@@ -61,6 +65,18 @@ class PackageCallbackList {
     callbackMap[id].push_back(func);
   }
 
+  size_t size() {
+    size_t size = 0;
+    for (auto&& key_value : callbackMap) {
+      size += key_value.second.size();
+    }
+    return size;
+  }
+
+  void clear() {
+    callbackMap.clear();
+  }
+
   /**
    * Execute all the callbacks associated with a certain package
    */
@@ -77,4 +93,3 @@ using MeshPackageCallbackList =
 }  // namespace painlessmesh
 
 #endif
-

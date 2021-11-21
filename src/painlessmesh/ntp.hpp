@@ -69,6 +69,8 @@ inline bool adopt(protocol::NodeTree mesh, protocol::NodeTree connection) {
   if (mySubCount == remoteSubCount) {
     if (connection.nodeId == 0)
       Log(logger::ERROR, "Adopt called on uninitialized connection\n");
+    // TODO: there is a change here that a middle node also lower is than the two others and will
+    // start switching between both. Maybe should do it randomly instead?
     return mesh.nodeId < connection.nodeId;
   }
   return true;
