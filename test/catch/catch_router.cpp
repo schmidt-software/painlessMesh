@@ -59,16 +59,6 @@ SCENARIO("findRoute works as expected with different types of connections") {
       rt = router::findRoute<layout::Neighbour>(layout, 1895675351);
       REQUIRE(!rt);
     }
-
-    THEN("It can be converted to a NodeTree") {
-      auto lay = layout.asNodeTree();
-      auto nt = protocol::NodeTree();
-      nt.nodeId = lay.nodeId;
-      for (auto &&s : lay.subs) {
-        nt.subs.push_back(s);
-      }
-      REQUIRE(nt == lay);
-    }
   }
 }
 

@@ -98,8 +98,8 @@ SCENARIO("We can setup and connect two meshes over localport") {
     io_service.poll();
   }
 
-  REQUIRE(layout::size(mesh1.asNodeTree()) == 2);
-  REQUIRE(layout::size(mesh2.asNodeTree()) == 2);
+  REQUIRE(layout::size(mesh1) == 2);
+  REQUIRE(layout::size(mesh2) == 2);
 }
 
 SCENARIO("The MeshTest class works correctly") {
@@ -118,8 +118,8 @@ SCENARIO("The MeshTest class works correctly") {
     io_service.poll();
   }
 
-  REQUIRE(layout::size(mesh1.asNodeTree()) == 2);
-  REQUIRE(layout::size(mesh2.asNodeTree()) == 2);
+  REQUIRE(layout::size(mesh1) == 2);
+  REQUIRE(layout::size(mesh2) == 2);
 }
 
 SCENARIO("We can send a message using our Nodes class") {
@@ -136,7 +136,7 @@ SCENARIO("We can send a message using our Nodes class") {
     delay(10);
   }
 
-  REQUIRE(layout::size(n.nodes[0]->asNodeTree()) == 12);
+  REQUIRE(layout::size((*n.nodes[0])) == 12);
 
   int x = 0;
   int y = 0;
@@ -211,7 +211,7 @@ SCENARIO("Rooting works") {
 
   n.nodes[5]->setRoot(true);
   REQUIRE(n.nodes[5]->isRoot());
-  REQUIRE(layout::isRooted(n.nodes[5]->asNodeTree()));
+  REQUIRE(layout::isRooted((*n.nodes[5])));
 
   for (auto i = 0; i < 10000; ++i) {
     n.update();
@@ -219,7 +219,7 @@ SCENARIO("Rooting works") {
   }
 
   for (auto &&node : n.nodes) {
-    REQUIRE(layout::isRooted(node->asNodeTree()));
+    REQUIRE(layout::isRooted((*node)));
     if (n.nodes[5]->getNodeId() == node->getNodeId()) {
       REQUIRE(node->isRoot());
     } else {
@@ -263,11 +263,11 @@ SCENARIO("Network loops are detected") {
   }
 
   // Looped network, should break up so it can reform
-  REQUIRE(layout::size(mesh1.asNodeTree()) < 5);
-  REQUIRE(layout::size(mesh2.asNodeTree()) < 5);
-  REQUIRE(layout::size(mesh3.asNodeTree()) < 5);
-  REQUIRE(layout::size(mesh4.asNodeTree()) < 5);
-  REQUIRE(layout::size(mesh5.asNodeTree()) < 5);
+  REQUIRE(layout::size(mesh1) < 5);
+  REQUIRE(layout::size(mesh2) < 5);
+  REQUIRE(layout::size(mesh3) < 5);
+  REQUIRE(layout::size(mesh4) < 5);
+  REQUIRE(layout::size(mesh5) < 5);
 
   mesh1.stop();
   mesh2.stop();
@@ -298,7 +298,7 @@ SCENARIO("Disconnects are detected and forwarded") {
   }
 
   for (auto &&node : n.nodes) {
-    REQUIRE(layout::size(node->asNodeTree()) == dim);
+    REQUIRE(layout::size((*node)) == dim);
   }
 
   int x = 0;
@@ -326,7 +326,7 @@ SCENARIO("Disconnects are detected and forwarded") {
   REQUIRE(x == 3);
 
   for (auto &&node : n.nodes) {
-    REQUIRE(layout::size(node->asNodeTree()) < dim);
+    REQUIRE(layout::size((*node)) < dim);
   }
 
   n.stop();
@@ -355,7 +355,7 @@ SCENARIO("Disconnects don't lead to crashes") {
   }
 
   for (auto &&node : n.nodes) {
-    REQUIRE(layout::size(node->asNodeTree()) == dim);
+    REQUIRE(layout::size((*node)) == dim);
   }
 
   int x = 0;
@@ -390,7 +390,7 @@ SCENARIO("Disconnects don't lead to crashes") {
   REQUIRE(x == 3);
 
   for (auto &&node : n.nodes) {
-    REQUIRE(layout::size(node->asNodeTree()) < dim);
+    REQUIRE(layout::size((*node)) < dim);
   }
 
   n.stop();

@@ -207,7 +207,7 @@ callback::MeshPackageCallbackList<U> addPackageCallback(
         auto newTree = variant.to<protocol::NodeSyncRequest>();
         handleNodeSync<T, U>(mesh, newTree, connection);
         send<protocol::NodeSyncReply>(
-            connection->reply(std::move(mesh.asNodeTree())), connection, true);
+            connection->reply(mesh), connection, true);
         return false;
       });
 

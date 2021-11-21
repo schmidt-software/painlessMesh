@@ -148,7 +148,7 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
   if (aps.empty()) {
     // No unknown nodes found
     if (WiFi.status() == WL_CONNECTED &&
-        !(mesh->shouldContainRoot && !layout::isRooted(mesh->asNodeTree()))) {
+        !(mesh->shouldContainRoot && !layout::isRooted(mesh))) {
       // if already connected -> scan slow
       Log(CONNECTION,
           "connectToAP(): Already connected, and no unknown nodes found: "
@@ -171,8 +171,8 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
       int prob = mesh->stability;
       if (!mesh->shouldContainRoot)
         // Slower when part of bigger network
-        prob /= 2 * (1 + layout::size(mesh->asNodeTree()));
-      if (!layout::isRooted(mesh->asNodeTree()) && random(0, 1000) < prob) {
+        prob /= 2 * (1 + layout::size(*mesh));
+      if (!layout::isRooted(*mesh) && random(0, 1000) < prob) {
         Log(CONNECTION, "connectToAP(): Reconfigure network: %s\n",
             String(prob).c_str());
         // close STA connection, this will trigger station disconnect which

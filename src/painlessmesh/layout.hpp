@@ -49,7 +49,8 @@ class Layout {
    * On the ESP hardware nodeId is uniquely calculated from the MAC address of
    * the node.
    */
-  uint32_t getNodeId() { return nodeId; }
+  uint32_t getNodeId() const { return nodeId; }
+  bool isRoot() const { return root; }
 
  protected:
   uint32_t nodeId = 0;
@@ -61,7 +62,7 @@ inline Layout<T> excludeRoute(Layout<T> layout, uint32_t exclude) {
   // Make sure to exclude any subs with nodeId == 0,
   // even if exlude is not set to zero
   layout.subs.remove_if(
-      [exclude](auto s) { return s.nodeId == 0 || s.nodeId == exclude; });
+      [exclude](auto s) { return s->nodeId == 0 || s->nodeId == exclude; });
   return layout;
 }
 
@@ -124,19 +125,19 @@ class Neighbour : public protocol::NodeTree {
    */
   template <typename T>
   protocol::NodeSyncRequest request(layout::Layout<T> layout) {
-    auto subTree = excludeRoute(std::move(layout), nodeId);
-    return protocol::NodeSyncRequest(subTree.nodeId, nodeId, subTree.subs,
-                                     subTree.root);
+    auto subTree = excludeRoute(layout, nodeId);
+    return protocol::NodeSyncRequest(subTree.getNodeId(), nodeId, subTree.subs,
+                                     subTree.isRoot());
   }
 
   /**
    * Create a reply
    */
   template <typename T>
-  protocol::NodeSyncReply reply(layout::Layout<T>&& layout) {
-    auto subTree = excludeRoute(std::move(layout), nodeId);
-    return protocol::NodeSyncReply(subTree.nodeId, nodeId, subTree.subs,
-                                   subTree.root);
+  protocol::NodeSyncReply reply(layout::Layout<T> layout) {
+    auto subTree = excludeRoute(layout, nodeId);
+    return protocol::NodeSyncReply(subTree.getNodeId(), nodeId, subTree.subs,
+                                   subTree.isRoot());
   }
 };
 
@@ -157,16 +158,31 @@ inline uint32_t size(const Layout<T>& layout) {
 /**
  * Whether the top node in the tree is also the root of the mesh
  */
-inline bool isRoot(protocol::NodeTree nodeTree) {
-  if (nodeTree.root) return true;
-  return false;
+inline bool isRoot(const protocol::NodeTree &nodeTree) {
+  return nodeTree.root;
+}
+
+template<typename T>
+inline bool isRoot(const layout::Layout<T> &layout) {
+  return layout.isRoot();
 }
 
 /**
  * Whether any node in the tree is also root of the mesh
  */
-inline bool isRooted(protocol::NodeTree nodeTree) {
+inline bool isRooted(const protocol::NodeTree &nodeTree) {
   return (isRoot(nodeTree) || nodeTree.containsRoot);
+}
+
+template<typename T>
+inline bool isRooted(const layout::Layout<T> &layout) {
+  if (isRoot(layout))
+    return true;
+  for (auto &&s : layout.subs) {
+    if (isRooted((*s)))
+      return true;
+  }
+  return false;
 }
 
 /**

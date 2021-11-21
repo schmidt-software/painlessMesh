@@ -333,14 +333,7 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
    * current node.
    */
   std::list<uint32_t> getNodeList(bool includeSelf = false) {
-    return painlessmesh::layout::asList(this->asNodeTree(), includeSelf);
-  }
-
-  /**
-   * Return a json representation of the current mesh layout
-   */
-  inline TSTRING subConnectionJson(bool pretty = false) {
-    return this->asNodeTree().toString(pretty);
+    return painlessmesh::layout::asList(*this, includeSelf);
   }
 
   inline std::shared_ptr<Task> addTask(unsigned long aInterval,

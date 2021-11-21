@@ -207,13 +207,14 @@ class NodeSyncRequest : public NodeTree {
   uint32_t dest;
 
   NodeSyncRequest() {}
-  NodeSyncRequest(uint32_t fromID, uint32_t destID, std::list<NodeTree> subTree,
+
+  template<typename T>
+  NodeSyncRequest(uint32_t fromID, uint32_t destID, std::list<T> subTree,
                   bool iAmRoot = false) {
-    // TODO SYNC: go over the subtree and append to knownNodes and check for root
     for (auto && s : subTree) {
-      auto lst = asList(s);
+      auto lst = asList((*s));
       knownNodes.insert(knownNodes.end(), lst.begin(), lst.end());
-      if (s.root || s.containsRoot)
+      if (s->root || s->containsRoot)
         containsRoot = true;
     }
     from = fromID;
