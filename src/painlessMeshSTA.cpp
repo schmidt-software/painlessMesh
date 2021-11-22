@@ -148,7 +148,7 @@ void ICACHE_FLASH_ATTR StationScan::connectToAP() {
   if (aps.empty()) {
     // No unknown nodes found
     if (WiFi.status() == WL_CONNECTED &&
-        !(mesh->shouldContainRoot && !layout::isRooted(mesh))) {
+        !(mesh->shouldContainRoot && !layout::isRooted(*mesh))) {
       // if already connected -> scan slow
       Log(CONNECTION,
           "connectToAP(): Already connected, and no unknown nodes found: "

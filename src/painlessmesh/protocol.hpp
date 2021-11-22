@@ -125,7 +125,7 @@ class NodeTree : public PackageInterface {
 
   NodeTree(JsonObject jsonObj) {
     if (jsonObj.containsKey("root")) root = jsonObj["root"].as<bool>();
-    if (jsonObj.containsKey("containsRoot")) root = jsonObj["containsRoot"].as<bool>();
+    if (jsonObj.containsKey("containsRoot")) containsRoot = jsonObj["containsRoot"].as<bool>();
     if (jsonObj.containsKey("nodeId"))
       nodeId = jsonObj["nodeId"].as<uint32_t>();
     else
@@ -246,8 +246,15 @@ class NodeSyncRequest : public NodeTree {
   }
 
   size_t jsonObjectSize() const {
-    // type, dest, from + parent class size
-    return 3 + NodeTree::jsonObjectSize();
+    // I am not sure why, but calling the parent class here won't work
+    // Need to recalculate the size
+    size_t base = 4; // nodeId, type, dest, from
+    if (root) ++base;
+    if (containsRoot) ++base;
+    if (knownNodes.size() > 0) ++base;
+    size_t size = JSON_OBJECT_SIZE(base);
+    if (knownNodes.size() > 0) size += JSON_ARRAY_SIZE(knownNodes.size());
+    return size;
   }
 };
 
@@ -399,8 +406,7 @@ class Variant {
   Variant(std::string json)
       : jsonBuffer(JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(4) +
                    2 * json.length()) {
-    error = deserializeJson(jsonBuffer, json,
-                            DeserializationOption::NestingLimit(255));
+    error = deserializeJson(jsonBuffer, json);
     if (!error) jsonObj = jsonBuffer.as<JsonObject>();
   }
 
@@ -411,8 +417,7 @@ class Variant {
    * @param capacity The capacity to reserve for parsing the string
    */
   Variant(std::string json, size_t capacity) : jsonBuffer(capacity) {
-    error = deserializeJson(jsonBuffer, json,
-                            DeserializationOption::NestingLimit(255));
+    error = deserializeJson(jsonBuffer, json);
     if (!error) jsonObj = jsonBuffer.as<JsonObject>();
   }
 #endif
@@ -426,8 +431,7 @@ class Variant {
   Variant(String json)
       : jsonBuffer(JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(4) +
                    2 * json.length()) {
-    error = deserializeJson(jsonBuffer, json,
-                            DeserializationOption::NestingLimit(255));
+    error = deserializeJson(jsonBuffer, json);
     if (!error) jsonObj = jsonBuffer.as<JsonObject>();
   }
 
@@ -438,8 +442,7 @@ class Variant {
    * @param capacity The capacity to reserve for parsing the string
    */
   Variant(String json, size_t capacity) : jsonBuffer(capacity) {
-    error = deserializeJson(jsonBuffer, json,
-                            DeserializationOption::NestingLimit(255));
+    error = deserializeJson(jsonBuffer, json);
     if (!error) jsonObj = jsonBuffer.as<JsonObject>();
   }
 #endif

@@ -9,6 +9,8 @@
 #include <TaskSchedulerDeclarations.h>
 
 #define ARDUINOJSON_USE_LONG_LONG 1
+#define ARDUINOJSON_DEFAULT_NESTING_LIMIT 10
+
 #undef ARDUINOJSON_ENABLE_STD_STRING
 #include <ArduinoJson.h>
 #undef ARDUINOJSON_ENABLE_STD_STRING

@@ -63,9 +63,9 @@ inline painlessmesh::protocol::Broadcast createBroadcast(int length = -1) {
 inline painlessmesh::protocol::NodeTree createNodeTree(int nodes, int contains_root) {
   auto pkg = painlessmesh::protocol::NodeTree();
   pkg.nodeId = runif(0, std::numeric_limits<uint32_t>::max());
+  --nodes;  // The current node
   if (contains_root == 0) {
     pkg.root = true;
-    --nodes;  // The current node
     --contains_root;
   } else if (contains_root >= 0 && contains_root <= nodes) {
     pkg.containsRoot = true;

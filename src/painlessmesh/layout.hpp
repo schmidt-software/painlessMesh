@@ -62,7 +62,7 @@ inline Layout<T> excludeRoute(Layout<T> layout, uint32_t exclude) {
   // Make sure to exclude any subs with nodeId == 0,
   // even if exlude is not set to zero
   layout.subs.remove_if(
-      [exclude](auto s) { return s->nodeId == 0 || s->nodeId == exclude; });
+      [exclude](std::shared_ptr<T> s) { return s->nodeId == 0 || s->nodeId == exclude; });
   return layout;
 }
 
@@ -192,9 +192,9 @@ template <typename T>
 inline std::list<uint32_t> asList(layout::Layout<T> nodeTree,
                                   bool includeSelf = true) {
   std::list<uint32_t> lst;
-  if (includeSelf) lst.push_back(nodeTree.nodeId);
+  if (includeSelf) lst.push_back(nodeTree.getNodeId());
   for (auto&& s : nodeTree.subs) {
-    lst.splice(lst.end(), asList(s));
+    lst.splice(lst.end(), asList(*s));
   }
   return lst;
 }

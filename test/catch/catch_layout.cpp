@@ -20,24 +20,23 @@ SCENARIO("isRoot returns true if the top level Node is the root of the mesh") {
   GIVEN("A nodeTree with root as a top node") {
     std::string rootJson =
         "{\"type\":6,\"root\":true,\"dest\":2428398258,\"from\":3907768579,"
-        "\"subs\":[{"
-        "\"nodeId\":3959373838,\"subs\":[{\"nodeId\":416992913},{\"nodeId\":"
-        "1895675348}]}]}";
+        "\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant = protocol::Variant(rootJson);
     auto tree1 = variant.to<protocol::NodeTree>();
     THEN("isRoot returns true") { REQUIRE(layout::isRoot(tree1)); }
   }
   GIVEN("A nodeTree without a root as a top node") {
     std::string jsonTree1 =
-        "{\"type\":6,\"dest\":2428398258,\"from\":3907768579,\"nodeId\":"
-        "3907768579,\"subs\":[{\"nodeId\":3959373838,\"subs\":[{\"nodeId\":"
-        "416992913},{\"nodeId\":1895675348,\"root\":true}]}]}";
+        "{\"type\":6,\"containsRoot\":true,\"dest\":2428398258,\"from\":"
+        "3907768579,"
+        "\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant1 = protocol::Variant(jsonTree1);
     auto tree1 = variant1.to<protocol::NodeTree>();
+
     std::string jsonTree2 =
         "{\"type\":6,\"dest\":2428398258,\"from\":3907768579,\"nodeId\":"
-        "3907768579,\"subs\":[{\"nodeId\":3959373838,\"subs\":[{\"nodeId\":"
-        "416992913},{\"nodeId\":1895675348,\"root\":true}]}]}";
+        "3907768579,"
+        "\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant2 = protocol::Variant(jsonTree2);
     auto tree2 = variant2.to<protocol::NodeTree>();
     THEN("isRoot returns false") {
@@ -66,18 +65,15 @@ SCENARIO("isRooted returns true if any node in the mesh is the root node") {
   GIVEN("A nodeTree with root as a top node") {
     std::string rootJson =
         "{\"type\":6,\"root\":true,\"dest\":2428398258,\"from\":3907768579,"
-        "\"subs\":[{"
-        "\"nodeId\":3959373838,\"subs\":[{\"nodeId\":416992913},{\"nodeId\":"
-        "1895675348}]}]}";
+        "\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant = protocol::Variant(rootJson);
     auto tree1 = variant.to<protocol::NodeTree>();
     THEN("isRooted returns true") { REQUIRE(layout::isRooted(tree1)); }
   }
   GIVEN("A nodeTree with a root some where else") {
     std::string jsonTree1 =
-        "{\"type\":6,\"dest\":2428398258,\"from\":3907768579,\"nodeId\":"
-        "3907768579,\"subs\":[{\"nodeId\":3959373838,\"subs\":[{\"nodeId\":"
-        "416992913},{\"nodeId\":1895675348,\"root\":true}]}]}";
+        "{\"type\":6,\"containsRoot\":true,\"dest\":2428398258,\"from\":"
+        "3907768579,\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant1 = protocol::Variant(jsonTree1);
     auto tree1 = variant1.to<protocol::NodeTree>();
     THEN("isRooted returns true") { REQUIRE(layout::isRooted(tree1)); }
@@ -85,12 +81,11 @@ SCENARIO("isRooted returns true if any node in the mesh is the root node") {
 
   GIVEN("A nodeTree without a root any where else") {
     std::string jsonTree2 =
-        "{\"type\":6,\"dest\":2428398258,\"from\":3907768579,\"nodeId\":"
-        "3907768579,\"subs\":[{\"nodeId\":3959373838,\"subs\":[{\"nodeId\":"
-        "416992913},{\"nodeId\":1895675348,\"root\":true}]}]}";
+        "{\"type\":6,\"dest\":2428398258,\"from\":3907768579,"
+        "\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant2 = protocol::Variant(jsonTree2);
     auto tree2 = variant2.to<protocol::NodeTree>();
-    THEN("isRooted returns false") { REQUIRE(!layout::isRoot(tree2)); }
+    THEN("isRooted returns false") { REQUIRE(!layout::isRooted(tree2)); }
   }
 
   GIVEN("A random tree with a root") {
@@ -108,11 +103,15 @@ SCENARIO("isRooted returns true if any node in the mesh is the root node") {
 SCENARIO("We can get the size of the mesh") {
   GIVEN("A tree with a set size") {
     std::string jsonTree =
-        "{\"type\":6,\"dest\":2428398258,\"from\":3907768579,\"nodeId\":"
-        "3907768579,\"subs\":[{\"nodeId\":3959373838,\"subs\":[{\"nodeId\":"
-        "416992913},{\"nodeId\":1895675348,\"root\":true}]}]}";
+        "{\"type\":6,\"root\":true,\"dest\":2428398258,\"from\":3907768579,"
+        "\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant = protocol::Variant(jsonTree);
     auto tree = variant.to<protocol::NodeTree>();
+    THEN("Known nodes is set correctly") {
+      REQUIRE(tree.knownNodes.size() == 3);
+      REQUIRE(tree.knownNodes.front() == 3959373838);
+    }
+
     THEN("Size returns the correct size") { REQUIRE(layout::size(tree) == 4); }
   }
   GIVEN("A random tree with a set size") {
@@ -128,8 +127,7 @@ SCENARIO("We can confirm whether a mesh contains specific nodes") {
   GIVEN("A tree with known nodes") {
     std::string jsonTree =
         "{\"type\":6,\"dest\":2428398258,\"from\":3107768579,\"nodeId\":"
-        "3907768579,\"subs\":[{\"nodeId\":3959373838,\"subs\":[{\"nodeId\":"
-        "416992913},{\"nodeId\":1895675348,\"root\":true}]}]}";
+        "3907768579,\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant = protocol::Variant(jsonTree);
     auto tree = variant.to<protocol::NodeTree>();
     THEN(
@@ -149,8 +147,7 @@ SCENARIO("A layout neighbour knows when to update its sub") {
   GIVEN("A Neighbour") {
     std::string jsonTree =
         "{\"type\":6,\"dest\":2428398258,\"from\":3107768579,\"nodeId\":"
-        "3907768579,\"subs\":[{\"nodeId\":3959373838,\"subs\":[{\"nodeId\":"
-        "416992913},{\"nodeId\":1895675348,\"root\":true}]}]}";
+        "3907768579,\"knownNodes\":[3959373838,416992913,1895675348]}";
     auto variant = protocol::Variant(jsonTree);
     auto tree = variant.to<layout::Neighbour>();
     // auto neighbour = std::interpret_cast<layout::Neighbour*>(pTree);
@@ -174,4 +171,3 @@ SCENARIO("A layout neighbour knows when to update its sub") {
     }
   }
 }
-

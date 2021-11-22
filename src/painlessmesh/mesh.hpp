@@ -336,6 +336,15 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
     return painlessmesh::layout::asList(*this, includeSelf);
   }
 
+
+  inline TSTRING subConnectionJson(bool pretty = false) {
+    TSTRING str;
+    auto nrq = painlessmesh::protocol::NodeSyncRequest(0, 0, this->subs, this->root);
+    auto pkg = painlessmesh::protocol::Variant(nrq);
+    pkg.printTo(str, pretty);
+    return str;
+  }
+
   inline std::shared_ptr<Task> addTask(unsigned long aInterval,
                                        long aIterations,
                                        std::function<void()> aCallback) {

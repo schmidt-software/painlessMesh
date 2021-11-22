@@ -397,6 +397,18 @@ SCENARIO("NodeSyncReply supports the == operator", "[Variant][protocol]") {
 }
 
 SCENARIO("A variant can printTo a package", "[Variant][protocol]") {
+  GIVEN("A NodeSyncRequest package printed to a string using Variant") {
+    auto pkg = createNodeSyncRequest(5);
+    std::string str;
+    auto variant = Variant(pkg);
+    variant.printTo(str);
+    THEN("It can be converted back into an identical pkg") {
+      auto variant = Variant(str);
+      auto pkg2 = variant.to<NodeSyncRequest>();
+      REQUIRE(pkg2 == pkg);
+    }
+  }
+
   GIVEN("A NodeSyncReply package printed to a string using Variant") {
     auto pkg = createNodeSyncReply(5);
     std::string str;
