@@ -409,8 +409,14 @@ void addReceivePackageCallback(Scheduler& scheduler, plugin::PackageHandler<T>& 
                                  // current progress
         #ifdef ESP32                   
           auto file = SPIFFS.open(updateFW->ota_fn, "w");
+          if (!file) {
+            Log(ERROR, "handleOTA(): Unable to write md5 of new update to the SPIFFS file. This will result in endless update loops for OTA\n");
+          }
         #else
           auto file = LittleFS.open(updateFW->ota_fn, "w");
+          if (!file) {
+            Log(ERROR, "handleOTA(): Unable to write md5 of new binary to the LittleFS file. This will result in endless update loops for OTA\n");
+          }
         #endif
 
           String msg;
