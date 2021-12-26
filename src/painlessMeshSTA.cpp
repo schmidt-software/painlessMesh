@@ -88,6 +88,8 @@ void ICACHE_FLASH_ATTR StationScan::scanComplete() {
     // Task filter all unknown
     filterAPs();
 
+    lastAPs = aps;
+
     // Next task is to sort by strength
     task.yield([this] {
       aps.sort([](WiFi_AP_Record_t a, WiFi_AP_Record_t b) {
