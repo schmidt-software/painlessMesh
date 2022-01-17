@@ -25,6 +25,9 @@ class StationScan {
   void filterAPs();
   void connectToAP();
 
+  /// Valid APs found during the last scan
+  std::list<WiFi_AP_Record_t> lastAPs;
+
  protected:
   TSTRING ssid;
   TSTRING password;

@@ -108,7 +108,7 @@ void routePackage(layout::Layout<T> layout, std::shared_ptr<T> connection,
   // Bug in copy constructor with grown capacity can cause segmentation fault
   auto variant =
       std::make_shared<protocol::Variant>(pkg, pkg.length() + baseCapacity);
-  while (variant->error == 3 && baseCapacity <= 20480) {
+  while (variant->error == DeserializationError::NoMemory && baseCapacity <= 20480) {
     // Not enough memory, adapt scaling (variant::capacityScaling) and log the
     // new value
     Log(DEBUG,
