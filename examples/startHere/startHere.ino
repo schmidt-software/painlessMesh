@@ -12,7 +12,11 @@
 
 // some gpio pin that is connected to an LED...
 // on my rig, this is 5, change to the right number of your LED.
-#define   LED             2       // GPIO number of connected LED, ON ESP-12 IS GPIO2
+#ifdef LED_BUILTIN
+#define LED LED_BUILTIN
+#else
+#define LED 2
+#endif
 
 #define   BLINK_PERIOD    3000 // milliseconds until cycle repeat
 #define   BLINK_DURATION  100  // milliseconds LED is on for
