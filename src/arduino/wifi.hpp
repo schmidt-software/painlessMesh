@@ -198,6 +198,9 @@ class Mesh : public painlessmesh::Mesh<Connection> {
     eventSTAConnectedHandler = WiFiEventHandler();
     eventSTADisconnectedHandler = WiFiEventHandler();
     eventSTAGotIPHandler = WiFiEventHandler();
+
+    stationScan.asyncTask.setCallback(NULL);
+    mScheduler->deleteTask(stationScan.asyncTask);
 #endif  // ESP32
     // Stop scanning task
     stationScan.task.setCallback(NULL);

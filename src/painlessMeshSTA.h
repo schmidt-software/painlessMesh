@@ -17,6 +17,10 @@ class StationScan {
  public:
   Task task;  // Station scanning for connections
 
+#ifdef ESP8266
+  Task asyncTask;
+#endif
+
   StationScan() {}
   void init(painlessmesh::wifi::Mesh *pMesh, TSTRING ssid, TSTRING password,
             uint16_t port);
