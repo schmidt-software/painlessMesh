@@ -39,9 +39,20 @@ void ICACHE_FLASH_ATTR StationScan::stationScan() {
   Log(CONNECTION, "stationScan(): %s\n", ssid.c_str());
 
 #ifdef ESP32
-  WiFi.scanNetworks(true, true);
+  WiFi.scanNetworks(true, true, false, 80, mesh->_meshChannel);
 #elif defined(ESP8266)
-  WiFi.scanNetworksAsync([&](int networks) { this->scanComplete(); }, true);
+  // WiFi.scanNetworksAsync([&](int networks) { this->scanComplete(); }, true);
+  // Try 600 times (60 seconds). If not completed after that, give up
+  asyncTask.set(100 * TASK_MILLISECOND, 600, [this]() {
+    auto num = WiFi.scanComplete();
+    if (num == WIFI_SCAN_FAILED || num > 0) {
+      this->asyncTask.disable();
+      this->scanComplete();
+    }
+  });
+  mesh->mScheduler->addTask(asyncTask);
+  asyncTask.enableDelayed();
+  WiFi.scanNetworks(true, true, mesh->_meshChannel);
 #endif
 
   task.delay(10 * SCAN_INTERVAL);  // Scan should be completed by then and next
@@ -57,7 +68,15 @@ void ICACHE_FLASH_ATTR StationScan::scanComplete() {
   Log(CONNECTION, "scanComplete():-- > Cleared old APs.\n");
 
   auto num = WiFi.scanComplete();
-  if (num == WIFI_SCAN_RUNNING || num == WIFI_SCAN_FAILED) return;
+  if (num == WIFI_SCAN_FAILED) {
+    Log(ERROR, "wifi scan failed. Retrying....\n");
+    task.forceNextIteration();
+    return;
+  } else if (num == WIFI_SCAN_RUNNING) {
+    Log(ERROR,
+        "scanComplete should never be called when scan is still running.\n");
+    return;
+  }
 
   Log(CONNECTION, "scanComplete(): num = %d\n", num);
 
@@ -87,6 +106,8 @@ void ICACHE_FLASH_ATTR StationScan::scanComplete() {
   task.yield([this]() {
     // Task filter all unknown
     filterAPs();
+
+    lastAPs = aps;
 
     // Next task is to sort by strength
     task.yield([this] {

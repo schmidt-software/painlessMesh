@@ -144,8 +144,7 @@ class Mesh : public painlessmesh::Mesh<Connection> {
     using namespace logger;
     Log(GENERAL, "tcpServerInit():\n");
     _tcpListener = new AsyncServer(_meshPort);
-    painlessmesh::tcp::initServer<Connection,
-                                  painlessmesh::Mesh<Connection>>(
+    painlessmesh::tcp::initServer<Connection, painlessmesh::Mesh<Connection>>(
         (*_tcpListener), (*this));
     Log(STARTUP, "AP tcp server established on port %d\n", _meshPort);
     return;
@@ -159,7 +158,6 @@ class Mesh : public painlessmesh::Mesh<Connection> {
       return;  // We have been configured not to connect to the mesh
 
     // TODO: We could pass this to tcpConnect instead of loading it here
-
     if (WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
       AsyncClient *pConn = new AsyncClient();
 
@@ -168,8 +166,7 @@ class Mesh : public painlessmesh::Mesh<Connection> {
         ip = stationScan.manualIP;
       }
 
-      painlessmesh::tcp::connect<Connection,
-                                 painlessmesh::Mesh<Connection>>(
+      painlessmesh::tcp::connect<Connection, painlessmesh::Mesh<Connection>>(
           (*pConn), ip, stationScan.port, (*this));
     } else {
       Log(ERROR, "tcpConnect(): err Something un expected in tcpConnect()\n");
@@ -201,6 +198,9 @@ class Mesh : public painlessmesh::Mesh<Connection> {
     eventSTAConnectedHandler = WiFiEventHandler();
     eventSTADisconnectedHandler = WiFiEventHandler();
     eventSTAGotIPHandler = WiFiEventHandler();
+
+    stationScan.asyncTask.setCallback(NULL);
+    mScheduler->deleteTask(stationScan.asyncTask);
 #endif  // ESP32
     // Stop scanning task
     stationScan.task.setCallback(NULL);
@@ -209,6 +209,9 @@ class Mesh : public painlessmesh::Mesh<Connection> {
 
     // Shutdown wifi hardware
     if (WiFi.status() != WL_DISCONNECTED) WiFi.disconnect();
+
+    // Delete the tcp server
+    delete _tcpListener;
   }
 
  protected:
@@ -243,42 +246,64 @@ class Mesh : public painlessmesh::Mesh<Connection> {
     eventScanDoneHandler = WiFi.onEvent(
         [this](WiFiEvent_t event, WiFiEventInfo_t info) {
           if (this->semaphoreTake()) {
-            Log(CONNECTION, "eventScanDoneHandler: SYSTEM_EVENT_SCAN_DONE\n");
+            Log(CONNECTION,
+                "eventScanDoneHandler: ARDUINO_EVENT_WIFI_SCAN_DONE\n");
             this->stationScan.scanComplete();
             this->semaphoreGive();
           }
         },
+#if ESP_ARDUINO_VERSION_MAJOR >= 2 
+        WiFiEvent_t::ARDUINO_EVENT_WIFI_SCAN_DONE);
+#else
         WiFiEvent_t::SYSTEM_EVENT_SCAN_DONE);
+#endif
 
     eventSTAStartHandler = WiFi.onEvent(
         [this](WiFiEvent_t event, WiFiEventInfo_t info) {
           if (this->semaphoreTake()) {
-            Log(CONNECTION, "eventSTAStartHandler: SYSTEM_EVENT_STA_START\n");
+            Log(CONNECTION,
+                "eventSTAStartHandler: ARDUINO_EVENT_WIFI_STA_START\n");
             this->semaphoreGive();
           }
         },
+#if ESP_ARDUINO_VERSION_MAJOR >= 2 
+        WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_START);
+#else
         WiFiEvent_t::SYSTEM_EVENT_STA_START);
+#endif
+
 
     eventSTADisconnectedHandler = WiFi.onEvent(
         [this](WiFiEvent_t event, WiFiEventInfo_t info) {
           if (this->semaphoreTake()) {
             Log(CONNECTION,
-                "eventSTADisconnectedHandler: SYSTEM_EVENT_STA_DISCONNECTED\n");
+                "eventSTADisconnectedHandler: "
+                "ARDUINO_EVENT_WIFI_STA_DISCONNECTED\n");
             this->droppedConnectionCallbacks.execute(0, true);
             this->semaphoreGive();
           }
         },
+#if ESP_ARDUINO_VERSION_MAJOR >= 2 
+        WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+#else
         WiFiEvent_t::SYSTEM_EVENT_STA_DISCONNECTED);
+#endif
 
     eventSTAGotIPHandler = WiFi.onEvent(
         [this](WiFiEvent_t event, WiFiEventInfo_t info) {
           if (this->semaphoreTake()) {
-            Log(CONNECTION, "eventSTAGotIPHandler: SYSTEM_EVENT_STA_GOT_IP\n");
+            Log(CONNECTION,
+                "eventSTAGotIPHandler: ARDUINO_EVENT_WIFI_STA_GOT_IP\n");
             this->tcpConnect();  // Connect to TCP port
             this->semaphoreGive();
           }
         },
+#if ESP_ARDUINO_VERSION_MAJOR >= 2 
+        WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);
+#else
         WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
+#endif
+
 #elif defined(ESP8266)
     eventSTAConnectedHandler = WiFi.onStationModeConnected(
         [&](const WiFiEventStationModeConnected &event) {
@@ -323,4 +348,3 @@ class Mesh : public painlessmesh::Mesh<Connection> {
 #endif
 
 #endif
-
